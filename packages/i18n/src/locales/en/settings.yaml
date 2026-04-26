@@ -1229,6 +1229,19 @@ vrm:
   skybox:
     skybox-intensity: SkyBox Intensity
     skybox-specular-mix: Specular Mix
+mmd:
+  title: MMD Settings
+  info:
+    format: Source format
+    primary-path: Primary model path
+    head-bone: Resolved head bone
+    texture-warnings: Missing texture warnings
+  look-at:
+    smoothing: Look-at smoothing
+    max-yaw: Max yaw
+    max-pitch: Max pitch
+    head-influence: Head influence
+    eye-influence: Eye influence
 websocket-secure-enabled:
   title: Enable Secure WebSocket (WSS)
   description: >-

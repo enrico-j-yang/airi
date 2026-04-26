@@ -1174,6 +1174,19 @@ vrm:
   skybox:
     skybox-intensity: 天空盒光照强度
     skybox-specular-mix: 漫反射/镜面反射混合系数
+mmd:
+  title: MMD 设置
+  info:
+    format: 模型格式
+    primary-path: 主模型路径
+    head-bone: 识别到的头部骨骼
+    texture-warnings: 缺失纹理警告数
+  look-at:
+    smoothing: 注视平滑度
+    max-yaw: 左右最大转角
+    max-pitch: 上下最大转角
+    head-influence: 头部参与比例
+    eye-influence: 眼部参与比例
 websocket-secure-enabled:
   title: 启用安全WebSocket (WSS)
   description: >-

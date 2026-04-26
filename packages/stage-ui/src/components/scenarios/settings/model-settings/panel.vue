@@ -8,6 +8,7 @@ import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 
 import Live2D from './live2d.vue'
+import MMD from './mmd.vue'
 import VRM from './vrm.vue'
 
 import { DisplayModelFormat } from '../../../../stores/display-models'
@@ -60,7 +61,7 @@ async function handleModelPick(selectedModel: DisplayModel | undefined) {
     <Callout label="We support both 2D and 3D models">
       <p>
         Click <strong>Select Model</strong> to import different formats of
-        models into catalog, currently, <code>.zip</code> (Live2D) and <code>.vrm</code> (VRM) are supported.
+        models into catalog, currently, <code>.zip</code> (Live2D), <code>.vrm</code> (VRM), and <code>.zip</code> (MMD PMX/PMD packages) are supported.
       </p>
       <p>
         Neuro-sama uses 2D model driven by Live2D Inc. developed framework.
@@ -84,6 +85,13 @@ async function handleModelPick(selectedModel: DisplayModel | undefined) {
     />
     <VRM
       v-if="effectiveRenderer === 'vrm'"
+      :allow-extract-colors="allowExtractColors"
+      :palette="palette"
+      :runtime-snapshot="runtimeSnapshot"
+      @extract-colors-from-model="$emit('extractColorsFromModel')"
+    />
+    <MMD
+      v-if="effectiveRenderer === 'mmd'"
       :allow-extract-colors="allowExtractColors"
       :palette="palette"
       :runtime-snapshot="runtimeSnapshot"

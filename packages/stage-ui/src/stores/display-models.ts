@@ -66,6 +66,7 @@ export const useDisplayModelsStore = defineStore('display-models', () => {
 
   let analyzeMmdModelArchive: (file: File) => Promise<{ primaryModelFormat: MmdModelFormat }>
   let generateLive2DPreview: (file: File) => Promise<string | undefined>
+  let generateMmdPreview: (file: File) => Promise<string | undefined>
   let generateVrmPreview: (file: File) => Promise<string | undefined>
 
   const displayModelsFromIndexedDBLoading = ref(false)
@@ -117,6 +118,7 @@ export const useDisplayModelsStore = defineStore('display-models', () => {
       importedAt: Date.now(),
     }
 
+    newDisplayModel.previewImage = await generateMmdPreview(file)
     displayModels.value.unshift(newDisplayModel)
 
     localforage.setItem<DisplayModelFile>(newDisplayModel.id, newDisplayModel)
@@ -173,10 +175,12 @@ export const useDisplayModelsStore = defineStore('display-models', () => {
 
     const { analyzeMmdArchive } = await import('@proj-airi/stage-ui-three/utils/mmd-archive')
     const { loadLive2DModelPreview } = await import('@proj-airi/stage-ui-live2d/utils/live2d-preview')
+    const { loadMmdModelPreview } = await import('@proj-airi/stage-ui-three/utils/mmd-preview')
     const { loadVrmModelPreview } = await import('@proj-airi/stage-ui-three/utils/vrm-preview')
 
     analyzeMmdModelArchive = analyzeMmdArchive
     generateLive2DPreview = loadLive2DModelPreview
+    generateMmdPreview = loadMmdModelPreview
     generateVrmPreview = loadVrmModelPreview
   }
 

@@ -540,12 +540,12 @@ function canvasElement() {
   if (stageModelRenderer.value === 'live2d')
     return live2dSceneRef.value?.canvasElement()
 
-  else if (stageModelRenderer.value === 'vrm')
+  else if (stageModelRenderer.value === 'vrm' || stageModelRenderer.value === 'mmd')
     return vrmViewerRef.value?.canvasElement()
 }
 
 function readRenderTargetRegionAtClientPoint(clientX: number, clientY: number, radius: number) {
-  if (stageModelRenderer.value !== 'vrm')
+  if (stageModelRenderer.value !== 'vrm' && stageModelRenderer.value !== 'mmd')
     return null
 
   return vrmViewerRef.value?.readRenderTargetRegionAtClientPoint?.(clientX, clientY, radius) ?? null
@@ -592,11 +592,12 @@ defineExpose({
         :live2d-render-scale="live2dRenderScale"
       />
       <ThreeScene
-        v-if="stageModelRenderer === 'vrm' && showStage"
+        v-if="(stageModelRenderer === 'vrm' || stageModelRenderer === 'mmd') && showStage"
         ref="vrmViewerRef"
         v-model:state="componentState"
         min-w="50% <lg:full" min-h="100 sm:100" h-full w-full flex-1
         :model-src="stageModelSelectedUrl"
+        :model-renderer="stageModelRenderer === 'mmd' ? 'mmd' : 'vrm'"
         :idle-animation="animations.idleLoop.toString()"
         :paused="paused"
         :show-axes="stageViewControlsEnabled"

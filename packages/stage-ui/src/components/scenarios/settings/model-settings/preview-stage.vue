@@ -71,7 +71,7 @@ async function capturePreviewFrame() {
   if (stageModelRenderer.value === 'live2d')
     return captureCanvasFrame(live2dSceneRef.value?.canvasElement())
 
-  if (stageModelRenderer.value === 'vrm')
+  if (stageModelRenderer.value === 'vrm' || stageModelRenderer.value === 'mmd')
     return captureCanvasFrame(vrmSceneRef.value?.canvasElement())
 
   return undefined
@@ -94,10 +94,10 @@ const runtimeSnapshot = computed<ModelSettingsRuntimeSnapshot>(() => {
     })
   }
 
-  if (stageModelRenderer.value === 'vrm') {
+  if (stageModelRenderer.value === 'vrm' || stageModelRenderer.value === 'mmd') {
     return createEmptyModelSettingsRuntimeSnapshot({
       ownerInstanceId: vrmPreviewStageInstanceId,
-      renderer: 'vrm',
+      renderer: stageModelRenderer.value,
       phase: hasModel ? scenePhase.value : 'no-model',
       controlsLocked: hasModel ? sceneMutationLocked.value : false,
       previewAvailable: hasModel,
@@ -141,9 +141,13 @@ defineExpose({
       />
     </div>
   </template>
-  <template v-if="stageModelRenderer === 'vrm'">
+  <template v-if="stageModelRenderer === 'vrm' || stageModelRenderer === 'mmd'">
     <div :class="vrmSceneClassList">
-      <ThreeScene ref="vrmSceneRef" :model-src="stageModelSelectedUrl" />
+      <ThreeScene
+        ref="vrmSceneRef"
+        :model-src="stageModelSelectedUrl"
+        :model-renderer="stageModelRenderer === 'mmd' ? 'mmd' : 'vrm'"
+      />
     </div>
   </template>
 </template>

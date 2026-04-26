@@ -30,10 +30,14 @@ watch(() => props.selectedModel?.id, (modelId) => {
   highlightDisplayModelCard.value = modelId
 }, { immediate: true })
 
+function hasFileExtension(file: File, extension: string) {
+  return file.name.toLowerCase().endsWith(extension)
+}
+
 function handleAddLive2DModel(file: FileList | null) {
   if (file === null || file.length === 0)
     return
-  if (!file[0].name.endsWith('.zip'))
+  if (!hasFileExtension(file[0], '.zip'))
     return
 
   displayModelStore.addDisplayModel(DisplayModelFormat.Live2dZip, file[0])
@@ -53,10 +57,19 @@ function handleMobilePick() {
 function handleAddVRMModel(file: FileList | null) {
   if (file === null || file.length === 0)
     return
-  if (!file[0].name.endsWith('.vrm'))
+  if (!hasFileExtension(file[0], '.vrm'))
     return
 
   displayModelStore.addDisplayModel(DisplayModelFormat.VRM, file[0])
+}
+
+function handleAddMmdModel(file: FileList | null) {
+  if (file === null || file.length === 0)
+    return
+  if (!hasFileExtension(file[0], '.zip'))
+    return
+
+  displayModelStore.addMmdDisplayModel(file[0])
 }
 
 const mapFormatRenderer: Record<DisplayModelFormat, string> = {
@@ -69,9 +82,11 @@ const mapFormatRenderer: Record<DisplayModelFormat, string> = {
 }
 
 const live2dDialog = useFileDialog({ accept: '.zip', multiple: false, reset: true })
+const mmdDialog = useFileDialog({ accept: '.zip', multiple: false, reset: true })
 const vrmDialog = useFileDialog({ accept: '.vrm', multiple: false, reset: true })
 
 live2dDialog.onChange(handleAddLive2DModel)
+mmdDialog.onChange(handleAddMmdModel)
 vrmDialog.onChange(handleAddVRMModel)
 </script>
 
@@ -124,6 +139,18 @@ vrmDialog.onChange(handleAddVRMModel)
                 transition="colors duration-200 ease-in-out" @click="vrmDialog.open()"
               >
                 VRM
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                :class="[
+                  'data-[disabled]:text-mauve8 relative flex cursor-pointer select-none items-center rounded-md px-3 py-2 leading-none outline-none data-[disabled]:pointer-events-none',
+                  'text-base sm:text-sm',
+                  'data-[highlighted]:bg-primary-300/20 dark:data-[highlighted]:bg-primary-100/20',
+                  'data-[highlighted]:text-primary-400 dark:data-[highlighted]:text-primary-200',
+                ]"
+                transition="colors duration-200 ease-in-out"
+                @click="mmdDialog.open()"
+              >
+                MMD (.zip)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenuPortal>

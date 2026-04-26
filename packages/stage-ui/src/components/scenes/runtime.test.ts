@@ -7,5 +7,6 @@ describe('shouldRunLive2dLipSyncLoop', () => {
     expect(shouldRunLive2dLipSyncLoop({ stageModelRenderer: 'live2d', paused: false })).toBe(true)
     expect(shouldRunLive2dLipSyncLoop({ stageModelRenderer: 'live2d', paused: true })).toBe(false)
     expect(shouldRunLive2dLipSyncLoop({ stageModelRenderer: 'vrm', paused: false })).toBe(false)
+    expect(shouldRunLive2dLipSyncLoop({ stageModelRenderer: 'mmd', paused: false })).toBe(false)
   })
 })

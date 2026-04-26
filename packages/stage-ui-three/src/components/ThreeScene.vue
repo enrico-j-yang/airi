@@ -45,16 +45,18 @@ import {
 } from '../trace'
 import { OrbitControls } from './Controls'
 import { SkyBox } from './Environment'
-import { VRMModel } from './Model'
+import { MMDModel, VRMModel } from './Model'
 
 const props = withDefaults(defineProps<{
   currentAudioSource?: AudioBufferSourceNode
   modelSrc?: string
+  modelRenderer?: 'vrm' | 'mmd'
   skyBoxSrc?: string
   showAxes?: boolean
   idleAnimation?: string
   paused?: boolean
 }>(), {
+  modelRenderer: 'vrm',
   showAxes: false,
   idleAnimation: new URL('../assets/vrm/animations/idle_loop.vrma', import.meta.url).href,
   paused: false,
@@ -128,8 +130,13 @@ const {
 } = storeToRefs(modelStore)
 
 type VrmFrameRuntimeHook = (vrm: VRM, delta: number) => void
+interface ThreeSceneModelHandle {
+  scene?: unknown
+  setExpression?: (expression: string, intensity?: number) => void
+  setVrmFrameHook?: (hook?: VrmFrameRuntimeHook) => void
+}
 
-const modelRef = ref<InstanceType<typeof VRMModel>>()
+const modelRef = ref<ThreeSceneModelHandle>()
 const vrmFrameRuntimeHook = shallowRef<VrmFrameRuntimeHook>()
 
 const camera = shallowRef(new PerspectiveCamera())
@@ -537,7 +544,7 @@ const effectProps = {
 }
 
 function applyVrmFrameRuntimeHook() {
-  modelRef.value?.setVrmFrameHook(vrmFrameRuntimeHook.value)
+  modelRef.value?.setVrmFrameHook?.(vrmFrameRuntimeHook.value)
 }
 
 watch(() => props.modelSrc, (modelSrc) => {
@@ -677,7 +684,7 @@ watch(directionalLightRotation, (newRotation) => {
 
 defineExpose({
   setExpression: (expression: string, intensity = 1) => {
-    modelRef.value?.setExpression(expression, intensity)
+    modelRef.value?.setExpression?.(expression, intensity)
   },
   // NOTICE: External runtime hooks are intentionally separate from internal VRM model hooks.
   // This public frame hook is reserved for live pose/tracking input and is forwarded to VRMModel
@@ -754,6 +761,7 @@ defineExpose({
         </EffectComposerPmndrs>
       </Suspense>
       <VRMModel
+        v-if="props.modelRenderer === 'vrm'"
         ref="modelRef"
         :current-audio-source="props.currentAudioSource"
         :last-committed-model-src="lastCommittedModelSrc"
@@ -771,6 +779,25 @@ defineExpose({
         :camera-position="cameraPosition"
         :camera="camera"
         @loading-progress="(val: number) => emit('loadModelProgress', val)"
+        @load-start="onVRMModelLoadStart"
+        @scene-bootstrap="onVRMSceneBootstrap"
+        @look-at-target="onVRMModelLookAtTarget"
+        @error="onVRMModelError"
+        @loaded="onVRMModelLoaded"
+      />
+      <MMDModel
+        v-else
+        ref="modelRef"
+        :last-committed-model-src="lastCommittedModelSrc"
+        :model-src="props.modelSrc"
+        :paused="props.paused"
+        :model-offset="modelOffset"
+        :model-rotation-y="modelRotationY"
+        :look-at-target="lookAtTarget"
+        :tracking-mode="trackingMode"
+        :eye-height="eyeHeight"
+        :camera-position="cameraPosition"
+        :camera="camera"
         @load-start="onVRMModelLoadStart"
         @scene-bootstrap="onVRMSceneBootstrap"
         @look-at-target="onVRMModelLookAtTarget"

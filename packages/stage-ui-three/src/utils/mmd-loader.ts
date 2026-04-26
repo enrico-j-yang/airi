@@ -1,0 +1,146 @@
+import type { Object3D } from 'three'
+
+import type { SceneBootstrap, Vec3 } from '../stores/model-store'
+
+import JSZip from 'jszip'
+
+import { Box3, LoadingManager, Vector3 } from 'three'
+import { MMDLoader } from 'three-stdlib'
+
+import { analyzeMmdArchive, resolveMmdArchivePath } from './mmd-archive'
+
+function toVec3(value: Vector3): Vec3 {
+  return { x: value.x, y: value.y, z: value.z }
+}
+
+function normalizeArchiveReference(path: string) {
+  const resolvedSegments: string[] = []
+
+  for (const segment of path.replace(/\\/g, '/').split('/')) {
+    if (!segment || segment === '.') {
+      continue
+    }
+
+    if (segment === '..') {
+      resolvedSegments.pop()
+      continue
+    }
+
+    resolvedSegments.push(segment)
+  }
+
+  return resolvedSegments.join('/')
+}
+
+function dirname(path: string) {
+  const segments = normalizeArchiveReference(path).split('/').filter(Boolean)
+  segments.pop()
+  return segments.length > 0 ? `${segments.join('/')}/` : ''
+}
+
+export function buildMmdSceneBootstrap(root: Object3D, cameraFov: number, eyeHeight: number): SceneBootstrap {
+  const box = new Box3().setFromObject(root)
+  const modelSize = new Vector3()
+  const modelCenter = new Vector3()
+  box.getSize(modelSize)
+  box.getCenter(modelCenter)
+  modelCenter.y += modelSize.y / 5
+
+  const radians = (cameraFov / 2 * Math.PI) / 180
+  const initialCameraOffset = new Vector3(
+    modelSize.x / 16,
+    modelSize.y / 8,
+    -(modelSize.y / 3) / Math.tan(radians),
+  )
+  const cameraPosition = modelCenter.clone().add(initialCameraOffset)
+
+  return {
+    cacheHit: false,
+    cameraDistance: cameraPosition.distanceTo(modelCenter),
+    cameraPosition: toVec3(cameraPosition),
+    eyeHeight,
+    lookAtTarget: {
+      x: modelCenter.x,
+      y: eyeHeight,
+      z: modelCenter.z - 100,
+    },
+    modelOffset: {
+      x: root.position.x,
+      y: root.position.y,
+      z: root.position.z,
+    },
+    modelOrigin: toVec3(modelCenter),
+    modelSize: toVec3(modelSize),
+  }
+}
+
+export async function loadMmdSceneFromZip(file: Blob & { name?: string }) {
+  const analysis = await analyzeMmdArchive(file)
+  const zip = await JSZip.loadAsync(await file.arrayBuffer())
+  const modelDirectory = dirname(analysis.primaryModelPath)
+  const archiveResourceRoot = `mmd-archive://${encodeURIComponent(analysis.archiveName || 'archive')}/`
+  const objectUrls = new Map<string, string>()
+  const unresolvedTextures = new Set<string>()
+
+  const manager = new LoadingManager()
+  manager.setURLModifier((requestedPath) => {
+    if (!requestedPath.startsWith(archiveResourceRoot)) {
+      return requestedPath
+    }
+
+    const archiveRelativePath = normalizeArchiveReference(requestedPath.slice(archiveResourceRoot.length))
+    const resolvedPath = resolveMmdArchivePath(analysis, archiveRelativePath)
+
+    if (!resolvedPath) {
+      unresolvedTextures.add(archiveRelativePath)
+      return requestedPath
+    }
+
+    const objectUrl = objectUrls.get(resolvedPath)
+    if (objectUrl) {
+      return objectUrl
+    }
+
+    const entry = zip.file(resolvedPath)
+    if (!entry) {
+      unresolvedTextures.add(archiveRelativePath)
+      return requestedPath
+    }
+
+    // NOTICE: MMDLoader's LoadingManager URL hook is synchronous, so all texture
+    // object URLs must exist before the texture loader requests them.
+    throw new Error(`Texture object URL was requested before preparation: ${resolvedPath}`)
+  })
+
+  const textureEntries = analysis.entryPaths.filter(path => !/\.(pmx|pmd)$/i.test(path))
+  await Promise.all(textureEntries.map(async (path) => {
+    const entry = zip.file(path)
+    if (!entry) {
+      return
+    }
+
+    const bytes = await entry.async('arraybuffer')
+    objectUrls.set(path, URL.createObjectURL(new Blob([bytes])))
+  }))
+
+  const modelEntry = zip.file(analysis.primaryModelPath)
+  if (!modelEntry) {
+    throw new Error(`Primary MMD model not found: ${analysis.primaryModelPath}`)
+  }
+
+  const modelUrl = URL.createObjectURL(new Blob([await modelEntry.async('arraybuffer')]))
+  const loader = new MMDLoader(manager)
+  loader.setResourcePath(`${archiveResourceRoot}${modelDirectory}`)
+  const mesh = await loader.loadAsync(modelUrl)
+
+  return {
+    analysis,
+    mesh,
+    unresolvedTextures: [...unresolvedTextures],
+    revokeAll() {
+      URL.revokeObjectURL(modelUrl)
+      objectUrls.forEach(url => URL.revokeObjectURL(url))
+      objectUrls.clear()
+    },
+  }
+}

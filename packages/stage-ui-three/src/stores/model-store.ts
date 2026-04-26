@@ -9,6 +9,11 @@ import defaultSkyBoxSrc from '../components/Environment/assets/sky_linekotsi_23_
 // TODO: this is for future type injection features
 // TODO: make a separate type.ts
 export interface Vec3 { x: number, y: number, z: number }
+export interface MmdDetectedBones {
+  head: string
+  leftEye: string
+  rightEye: string
+}
 export interface SceneBootstrap {
   cacheHit: boolean
   cameraDistance: number
@@ -77,6 +82,14 @@ interface BroadcastChannelEventShouldUpdateView {
 
 const vrmViewUpdateRuntimeInstanceId = Math.random().toString(36).slice(2, 10)
 let vrmViewUpdateMessageSequence = 0
+
+function createEmptyMmdDetectedBones(): MmdDetectedBones {
+  return {
+    head: '',
+    leftEye: '',
+    rightEye: '',
+  }
+}
 
 export const useModelStore = defineStore('modelStore', () => {
   const { post, data } = useBroadcastChannel<BroadcastChannelEvents, BroadcastChannelEvents>({ name: 'airi-stores-stage-ui-three-vrm' })
@@ -157,6 +170,25 @@ export const useModelStore = defineStore('modelStore', () => {
   const cameraPosition = useLocalStorage('settings/stage-ui-three/camera-position', { x: 0, y: 0, z: -1 })
   const cameraDistance = useLocalStorage('settings/stage-ui-three/cameraDistance', 0)
   const lookAtTarget = useLocalStorage('settings/stage-ui-three/lookAtTarget', { x: 0, y: 0, z: 0 })
+  const mmdLookAtSmoothing = useLocalStorage('settings/stage-ui-three/mmd/look-at-smoothing', 12)
+  const mmdLookAtMaxYaw = useLocalStorage('settings/stage-ui-three/mmd/look-at-max-yaw', 30)
+  const mmdLookAtMaxPitch = useLocalStorage('settings/stage-ui-three/mmd/look-at-max-pitch', 20)
+  const mmdHeadInfluence = useLocalStorage('settings/stage-ui-three/mmd/head-influence', 0.35)
+  const mmdEyeInfluence = useLocalStorage('settings/stage-ui-three/mmd/eye-influence', 1)
+  const mmdHeadBoneName = useLocalStorage('settings/stage-ui-three/mmd/head-bone-name', '')
+  const mmdLeftEyeBoneName = useLocalStorage('settings/stage-ui-three/mmd/left-eye-bone-name', '')
+  const mmdRightEyeBoneName = useLocalStorage('settings/stage-ui-three/mmd/right-eye-bone-name', '')
+  const mmdPrimaryModelPath = ref('')
+  const mmdPrimaryModelFormat = ref<'pmx' | 'pmd' | undefined>()
+  const mmdDetectedBones = ref<MmdDetectedBones>(createEmptyMmdDetectedBones())
+  const mmdUnresolvedTextures = ref<string[]>([])
+
+  function resetMmdRuntimeState() {
+    mmdPrimaryModelPath.value = ''
+    mmdPrimaryModelFormat.value = undefined
+    mmdDetectedBones.value = createEmptyMmdDetectedBones()
+    mmdUnresolvedTextures.value = []
+  }
 
   function resetModelStore() {
     scenePhase.value = 'pending'
@@ -175,6 +207,7 @@ export const useModelStore = defineStore('modelStore', () => {
     lookAtTarget.value = { x: 0, y: 0, z: 0 }
     trackingMode.value = 'none'
     eyeHeight.value = 0
+    resetMmdRuntimeState()
   }
 
   // === Environment / lighting / render settings ===
@@ -229,6 +262,18 @@ export const useModelStore = defineStore('modelStore', () => {
     cameraFOV,
     cameraPosition,
     cameraDistance,
+    mmdLookAtSmoothing,
+    mmdLookAtMaxYaw,
+    mmdLookAtMaxPitch,
+    mmdHeadInfluence,
+    mmdEyeInfluence,
+    mmdHeadBoneName,
+    mmdLeftEyeBoneName,
+    mmdRightEyeBoneName,
+    mmdPrimaryModelPath,
+    mmdPrimaryModelFormat,
+    mmdDetectedBones,
+    mmdUnresolvedTextures,
 
     directionalLightPosition,
     directionalLightTarget,
@@ -259,6 +304,7 @@ export const useModelStore = defineStore('modelStore', () => {
     beginSceneBindingTransaction,
     endSceneBindingTransaction,
     resetSceneBindingTransactions,
+    resetMmdRuntimeState,
 
     resetModelStore,
   }

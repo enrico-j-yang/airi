@@ -2,7 +2,7 @@ import { AmbientLight, DirectionalLight, PerspectiveCamera, Scene, WebGLRenderer
 
 import { buildMmdSceneBootstrap, loadMmdSceneFromZip } from './mmd-loader'
 
-export async function loadMmdModelPreview(file: File) {
+export async function loadMmdModelPreview(file: Blob & { name?: string }) {
   const canvas = document.createElement('canvas')
   canvas.width = 1440
   canvas.height = 2560
@@ -37,5 +37,32 @@ export async function loadMmdModelPreview(file: File) {
     renderer.renderLists.dispose()
     renderer.dispose()
     renderer.forceContextLoss()
+  }
+}
+
+export async function loadMmdModelPreviewFromUrl(url: string, fileName?: string) {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch MMD archive preview source: ${response.status} ${response.statusText}`)
+  }
+
+  const source = await response.blob()
+  const previewSource = new File(
+    [source],
+    fileName ?? resolveFileNameFromUrl(url),
+    { type: source.type || 'application/zip' },
+  )
+
+  return loadMmdModelPreview(previewSource)
+}
+
+function resolveFileNameFromUrl(url: string) {
+  try {
+    const pathname = new URL(url, globalThis.location?.href).pathname
+    const lastSegment = pathname.split('/').filter(Boolean).at(-1)
+    return lastSegment ? decodeURIComponent(lastSegment) : 'archive.zip'
+  }
+  catch {
+    return 'archive.zip'
   }
 }

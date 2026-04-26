@@ -53,6 +53,10 @@ export function resolveMmdDisplayModelFormat(format: MmdModelFormat) {
   return format === 'pmx' ? DisplayModelFormat.PMXZip : DisplayModelFormat.PMD
 }
 
+function isMmdDisplayModelFormat(format: DisplayModelFormat) {
+  return format === DisplayModelFormat.PMXZip || format === DisplayModelFormat.PMD
+}
+
 export const displayModelsPresets: DisplayModel[] = [
   { id: 'preset-live2d-1', format: DisplayModelFormat.Live2dZip, type: 'url', url: presetLive2dProUrl, name: 'Hiyori (Pro)', previewImage: presetLive2dPreview, importedAt: 1733113886840 },
   { id: 'preset-live2d-2', format: DisplayModelFormat.Live2dZip, type: 'url', url: presetLive2dFreeUrl, name: 'Hiyori (Free)', previewImage: presetLive2dPreview, importedAt: 1733113886840 },
@@ -63,10 +67,12 @@ export const displayModelsPresets: DisplayModel[] = [
 
 export const useDisplayModelsStore = defineStore('display-models', () => {
   const displayModels = ref<DisplayModel[]>([])
+  const previewGenerationPendingIds = new Set<string>()
 
   let analyzeMmdModelArchive: (file: File) => Promise<{ primaryModelFormat: MmdModelFormat }>
   let generateLive2DPreview: (file: File) => Promise<string | undefined>
   let generateMmdPreview: (file: File) => Promise<string | undefined>
+  let generateMmdPreviewFromUrl: (url: string, fileName?: string) => Promise<string | undefined>
   let generateVrmPreview: (file: File) => Promise<string | undefined>
 
   const displayModelsFromIndexedDBLoading = ref(false)
@@ -90,6 +96,7 @@ export const useDisplayModelsStore = defineStore('display-models', () => {
 
     displayModels.value = models.sort((a, b) => b.importedAt - a.importedAt)
     displayModelsFromIndexedDBLoading.value = false
+    void hydrateMissingMmdPreviewImages()
   }
 
   async function getDisplayModel(id: string) {
@@ -167,6 +174,7 @@ export const useDisplayModelsStore = defineStore('display-models', () => {
     }
 
     displayModels.value = [...displayModelsPresets].sort((a, b) => b.importedAt - a.importedAt)
+    void hydrateMissingMmdPreviewImages()
   }
 
   async function initialize() {
@@ -175,13 +183,68 @@ export const useDisplayModelsStore = defineStore('display-models', () => {
 
     const { analyzeMmdArchive } = await import('@proj-airi/stage-ui-three/utils/mmd-archive')
     const { loadLive2DModelPreview } = await import('@proj-airi/stage-ui-live2d/utils/live2d-preview')
-    const { loadMmdModelPreview } = await import('@proj-airi/stage-ui-three/utils/mmd-preview')
+    const { loadMmdModelPreview, loadMmdModelPreviewFromUrl } = await import('@proj-airi/stage-ui-three/utils/mmd-preview')
     const { loadVrmModelPreview } = await import('@proj-airi/stage-ui-three/utils/vrm-preview')
 
     analyzeMmdModelArchive = analyzeMmdArchive
     generateLive2DPreview = loadLive2DModelPreview
     generateMmdPreview = loadMmdModelPreview
+    generateMmdPreviewFromUrl = loadMmdModelPreviewFromUrl
     generateVrmPreview = loadVrmModelPreview
+  }
+
+  async function hydrateMissingMmdPreviewImages() {
+    if (typeof generateMmdPreview !== 'function' || typeof generateMmdPreviewFromUrl !== 'function') {
+      return
+    }
+
+    const modelsWithoutPreview = displayModels.value.filter(model => isMmdDisplayModelFormat(model.format) && !model.previewImage)
+
+    await Promise.allSettled(modelsWithoutPreview.map(async (model) => {
+      if (previewGenerationPendingIds.has(model.id)) {
+        return
+      }
+
+      previewGenerationPendingIds.add(model.id)
+
+      try {
+        const previewImage = model.type === 'file'
+          ? await generateMmdPreview(model.file)
+          : await generateMmdPreviewFromUrl(model.url)
+
+        if (!previewImage) {
+          return
+        }
+
+        const preset = displayModelsPresets.find(candidate => candidate.id === model.id)
+        if (preset) {
+          preset.previewImage = previewImage
+        }
+
+        const activeModel = displayModels.value.find(candidate => candidate.id === model.id)
+        if (activeModel) {
+          activeModel.previewImage = previewImage
+        }
+
+        if (model.type === 'file') {
+          await localforage.setItem<DisplayModelFile>(model.id, {
+            id: model.id,
+            format: model.format,
+            type: 'file',
+            file: model.file,
+            name: model.name,
+            importedAt: model.importedAt,
+            previewImage,
+          })
+        }
+      }
+      catch (err) {
+        console.error(`Failed to generate preview for display model: ${model.id}`, err)
+      }
+      finally {
+        previewGenerationPendingIds.delete(model.id)
+      }
+    }))
   }
 
   return {

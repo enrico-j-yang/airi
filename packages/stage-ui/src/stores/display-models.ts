@@ -1,3 +1,5 @@
+import type { MmdModelFormat } from '@proj-airi/stage-ui-three/utils/mmd-archive'
+
 import localforage from 'localforage'
 
 import { until } from '@vueuse/core'
@@ -25,6 +27,7 @@ const presetVrmAvatarAUrl = new URL('../assets/vrm/models/AvatarSample-A/AvatarS
 const presetVrmAvatarAPreview = new URL('../assets/vrm/models/AvatarSample-A/preview.png', import.meta.url).href
 const presetVrmAvatarBUrl = new URL('../assets/vrm/models/AvatarSample-B/AvatarSample_B.vrm', import.meta.url).href
 const presetVrmAvatarBPreview = new URL('../assets/vrm/models/AvatarSample-B/preview.png', import.meta.url).href
+const presetMmdModelUrl = new URL('../assets/mmd/models/模之屋-【刻晴-霓裾翩跹】_by_原神_0345ee40688f1677d9ecbefc99c059ae.zip', import.meta.url).href
 
 export interface DisplayModelFile {
   id: string
@@ -46,16 +49,22 @@ export interface DisplayModelURL {
   importedAt: number
 }
 
-const displayModelsPresets: DisplayModel[] = [
+export function resolveMmdDisplayModelFormat(format: MmdModelFormat) {
+  return format === 'pmx' ? DisplayModelFormat.PMXZip : DisplayModelFormat.PMD
+}
+
+export const displayModelsPresets: DisplayModel[] = [
   { id: 'preset-live2d-1', format: DisplayModelFormat.Live2dZip, type: 'url', url: presetLive2dProUrl, name: 'Hiyori (Pro)', previewImage: presetLive2dPreview, importedAt: 1733113886840 },
   { id: 'preset-live2d-2', format: DisplayModelFormat.Live2dZip, type: 'url', url: presetLive2dFreeUrl, name: 'Hiyori (Free)', previewImage: presetLive2dPreview, importedAt: 1733113886840 },
   { id: 'preset-vrm-1', format: DisplayModelFormat.VRM, type: 'url', url: presetVrmAvatarAUrl, name: 'AvatarSample_A', previewImage: presetVrmAvatarAPreview, importedAt: 1733113886840 },
   { id: 'preset-vrm-2', format: DisplayModelFormat.VRM, type: 'url', url: presetVrmAvatarBUrl, name: 'AvatarSample_B', previewImage: presetVrmAvatarBPreview, importedAt: 1733113886840 },
+  { id: 'preset-mmd-1', format: DisplayModelFormat.PMXZip, type: 'url', url: presetMmdModelUrl, name: 'Keqing (MMD)', importedAt: 1733113886840 },
 ]
 
 export const useDisplayModelsStore = defineStore('display-models', () => {
   const displayModels = ref<DisplayModel[]>([])
 
+  let analyzeMmdModelArchive: (file: File) => Promise<{ primaryModelFormat: MmdModelFormat }>
   let generateLive2DPreview: (file: File) => Promise<string | undefined>
   let generateVrmPreview: (file: File) => Promise<string | undefined>
 
@@ -95,6 +104,24 @@ export const useDisplayModelsStore = defineStore('display-models', () => {
 
   const loadLive2DModelPreview = (file: File) => generateLive2DPreview(file)
   const loadVrmModelPreview = (file: File) => generateVrmPreview(file)
+
+  async function addMmdDisplayModel(file: File) {
+    await until(displayModelsFromIndexedDBLoading).toBe(false)
+    const analysis = await analyzeMmdModelArchive(file)
+    const newDisplayModel: DisplayModelFile = {
+      id: `display-model-${nanoid()}`,
+      format: resolveMmdDisplayModelFormat(analysis.primaryModelFormat),
+      type: 'file',
+      file,
+      name: file.name,
+      importedAt: Date.now(),
+    }
+
+    displayModels.value.unshift(newDisplayModel)
+
+    localforage.setItem<DisplayModelFile>(newDisplayModel.id, newDisplayModel)
+      .catch(err => console.error(err))
+  }
 
   async function addDisplayModel(format: DisplayModelFormat, file: File) {
     await until(displayModelsFromIndexedDBLoading).toBe(false)
@@ -144,9 +171,11 @@ export const useDisplayModelsStore = defineStore('display-models', () => {
     await import('@proj-airi/stage-ui-live2d/utils/live2d-zip-loader')
     await import('@proj-airi/stage-ui-live2d/utils/live2d-opfs-registration')
 
+    const { analyzeMmdArchive } = await import('@proj-airi/stage-ui-three/utils/mmd-archive')
     const { loadLive2DModelPreview } = await import('@proj-airi/stage-ui-live2d/utils/live2d-preview')
     const { loadVrmModelPreview } = await import('@proj-airi/stage-ui-three/utils/vrm-preview')
 
+    analyzeMmdModelArchive = analyzeMmdArchive
     generateLive2DPreview = loadLive2DModelPreview
     generateVrmPreview = loadVrmModelPreview
   }
@@ -159,6 +188,7 @@ export const useDisplayModelsStore = defineStore('display-models', () => {
     loadDisplayModelsFromIndexedDB,
     getDisplayModel,
     addDisplayModel,
+    addMmdDisplayModel,
     renameDisplayModel,
     removeDisplayModel,
     resetDisplayModels,

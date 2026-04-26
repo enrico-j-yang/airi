@@ -7,7 +7,21 @@ import { computed, watch } from 'vue'
 
 import { DisplayModelFormat, useDisplayModelsStore } from '../display-models'
 
-export type StageModelRenderer = 'live2d' | 'vrm' | 'disabled' | undefined
+export type StageModelRenderer = 'live2d' | 'vrm' | 'mmd' | 'disabled' | undefined
+
+export function resolveStageModelRenderer(format: DisplayModelFormat): StageModelRenderer {
+  switch (format) {
+    case DisplayModelFormat.Live2dZip:
+      return 'live2d'
+    case DisplayModelFormat.VRM:
+      return 'vrm'
+    case DisplayModelFormat.PMXZip:
+    case DisplayModelFormat.PMD:
+      return 'mmd'
+    default:
+      return 'disabled'
+  }
+}
 
 export const useSettingsStageModel = defineStore('settings-stage-model', () => {
   const displayModelsStore = useDisplayModelsStore()
@@ -62,17 +76,7 @@ export const useSettingsStageModel = defineStore('settings-stage-model', () => {
       return
     }
 
-    switch (model.format) {
-      case DisplayModelFormat.Live2dZip:
-        stageModelRenderer.value = 'live2d'
-        break
-      case DisplayModelFormat.VRM:
-        stageModelRenderer.value = 'vrm'
-        break
-      default:
-        stageModelRenderer.value = 'disabled'
-        break
-    }
+    stageModelRenderer.value = resolveStageModelRenderer(model.format)
 
     if (model.type === 'file') {
       const nextUrl = URL.createObjectURL(model.file)

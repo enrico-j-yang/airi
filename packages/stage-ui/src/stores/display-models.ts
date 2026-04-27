@@ -113,6 +113,27 @@ export const useDisplayModelsStore = defineStore('display-models', () => {
   const loadLive2DModelPreview = (file: File) => generateLive2DPreview(file)
   const loadVrmModelPreview = (file: File) => generateVrmPreview(file)
 
+  function applyPreviewImage(modelId: string, previewImage: string) {
+    const presetIndex = displayModelsPresets.findIndex(candidate => candidate.id === modelId)
+    if (presetIndex >= 0) {
+      displayModelsPresets[presetIndex] = {
+        ...displayModelsPresets[presetIndex],
+        previewImage,
+      }
+    }
+
+    displayModels.value = displayModels.value.map((candidate) => {
+      if (candidate.id !== modelId) {
+        return candidate
+      }
+
+      return {
+        ...candidate,
+        previewImage,
+      }
+    })
+  }
+
   async function addMmdDisplayModel(file: File) {
     await until(displayModelsFromIndexedDBLoading).toBe(false)
     const analysis = await analyzeMmdModelArchive(file)
@@ -216,15 +237,7 @@ export const useDisplayModelsStore = defineStore('display-models', () => {
           return
         }
 
-        const preset = displayModelsPresets.find(candidate => candidate.id === model.id)
-        if (preset) {
-          preset.previewImage = previewImage
-        }
-
-        const activeModel = displayModels.value.find(candidate => candidate.id === model.id)
-        if (activeModel) {
-          activeModel.previewImage = previewImage
-        }
+        applyPreviewImage(model.id, previewImage)
 
         if (model.type === 'file') {
           await localforage.setItem<DisplayModelFile>(model.id, {

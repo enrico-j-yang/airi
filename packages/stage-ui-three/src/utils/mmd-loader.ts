@@ -9,6 +9,9 @@ import { MMDLoader } from 'three-stdlib'
 
 import { analyzeMmdArchive, resolveMmdArchivePath } from './mmd-archive'
 
+const WINDOWS_PATH_SEPARATOR_PATTERN = /\\/g
+const MMD_MODEL_FILE_PATTERN = /\.(?:pmx|pmd)$/i
+
 function toVec3(value: Vector3): Vec3 {
   return { x: value.x, y: value.y, z: value.z }
 }
@@ -16,7 +19,7 @@ function toVec3(value: Vector3): Vec3 {
 function normalizeArchiveReference(path: string) {
   const resolvedSegments: string[] = []
 
-  for (const segment of path.replace(/\\/g, '/').split('/')) {
+  for (const segment of path.replace(WINDOWS_PATH_SEPARATOR_PATTERN, '/').split('/')) {
     if (!segment || segment === '.') {
       continue
     }
@@ -38,7 +41,7 @@ function dirname(path: string) {
   return segments.length > 0 ? `${segments.join('/')}/` : ''
 }
 
-export function buildMmdSceneBootstrap(root: Object3D, cameraFov: number, eyeHeight: number): SceneBootstrap {
+export function buildMmdSceneBootstrap(root: Object3D, cameraFov: number, eyeHeight: number, cameraAspect = 1): SceneBootstrap {
   const box = new Box3().setFromObject(root)
   const modelSize = new Vector3()
   const modelCenter = new Vector3()
@@ -46,11 +49,15 @@ export function buildMmdSceneBootstrap(root: Object3D, cameraFov: number, eyeHei
   box.getCenter(modelCenter)
   modelCenter.y += modelSize.y / 5
 
-  const radians = (cameraFov / 2 * Math.PI) / 180
+  const verticalFovRadians = (cameraFov / 2 * Math.PI) / 180
+  const horizontalFovRadians = Math.atan(Math.tan(verticalFovRadians) * Math.max(cameraAspect, 1e-3))
+  const requiredVerticalDistance = (modelSize.y / 2) / Math.tan(verticalFovRadians)
+  const requiredHorizontalDistance = (modelSize.x / 2) / Math.tan(horizontalFovRadians)
+  const framingDistance = Math.max(requiredVerticalDistance, requiredHorizontalDistance) * 1.15
   const initialCameraOffset = new Vector3(
-    modelSize.x / 16,
-    modelSize.y / 8,
-    -(modelSize.y / 3) / Math.tan(radians),
+    0,
+    modelSize.y / 10,
+    framingDistance,
   )
   const cameraPosition = modelCenter.clone().add(initialCameraOffset)
 
@@ -62,7 +69,7 @@ export function buildMmdSceneBootstrap(root: Object3D, cameraFov: number, eyeHei
     lookAtTarget: {
       x: modelCenter.x,
       y: eyeHeight,
-      z: modelCenter.z - 100,
+      z: modelCenter.z + 100,
     },
     modelOffset: {
       x: root.position.x,
@@ -112,7 +119,7 @@ export async function loadMmdSceneFromZip(file: Blob & { name?: string }) {
     throw new Error(`Texture object URL was requested before preparation: ${resolvedPath}`)
   })
 
-  const textureEntries = analysis.entryPaths.filter(path => !/\.(pmx|pmd)$/i.test(path))
+  const textureEntries = analysis.entryPaths.filter(path => !MMD_MODEL_FILE_PATTERN.test(path))
   await Promise.all(textureEntries.map(async (path) => {
     const entry = zip.file(path)
     if (!entry) {
@@ -128,7 +135,8 @@ export async function loadMmdSceneFromZip(file: Blob & { name?: string }) {
     throw new Error(`Primary MMD model not found: ${analysis.primaryModelPath}`)
   }
 
-  const modelUrl = URL.createObjectURL(new Blob([await modelEntry.async('arraybuffer')]))
+  const modelObjectUrl = URL.createObjectURL(new Blob([await modelEntry.async('arraybuffer')]))
+  const modelUrl = withMmdModelExtension(modelObjectUrl, analysis.primaryModelFormat)
   const loader = new MMDLoader(manager)
   loader.setResourcePath(`${archiveResourceRoot}${modelDirectory}`)
   const mesh = await loader.loadAsync(modelUrl)
@@ -138,9 +146,13 @@ export async function loadMmdSceneFromZip(file: Blob & { name?: string }) {
     mesh,
     unresolvedTextures: [...unresolvedTextures],
     revokeAll() {
-      URL.revokeObjectURL(modelUrl)
+      URL.revokeObjectURL(modelObjectUrl)
       objectUrls.forEach(url => URL.revokeObjectURL(url))
       objectUrls.clear()
     },
   }
+}
+
+function withMmdModelExtension(url: string, format: 'pmx' | 'pmd') {
+  return `${url}#model.${format}`
 }

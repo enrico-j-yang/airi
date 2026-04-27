@@ -1,11 +1,17 @@
-import { AmbientLight, DirectionalLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three'
+import { AmbientLight, DirectionalLight, PerspectiveCamera, Scene, Vector3, WebGLRenderer } from 'three'
 
 import { buildMmdSceneBootstrap, loadMmdSceneFromZip } from './mmd-loader'
+import { markObjectMaterialsForUpdate, waitForObjectTextures } from './mmd-preview-textures'
+
+export const MMD_PREVIEW_WIDTH = 1440
+export const MMD_PREVIEW_HEIGHT = 1920
+export const MMD_PREVIEW_CAMERA_DISTANCE_SCALE = 1.08
+export const MMD_PREVIEW_LOOK_AT_Y_OFFSET_RATIO = -0.11
 
 export async function loadMmdModelPreview(file: Blob & { name?: string }) {
   const canvas = document.createElement('canvas')
-  canvas.width = 1440
-  canvas.height = 2560
+  canvas.width = MMD_PREVIEW_WIDTH
+  canvas.height = MMD_PREVIEW_HEIGHT
 
   const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: true, preserveDrawingBuffer: true })
   renderer.setPixelRatio(1)
@@ -22,11 +28,29 @@ export async function loadMmdModelPreview(file: Blob & { name?: string }) {
   scene.add(mesh)
 
   try {
-    const bootstrap = buildMmdSceneBootstrap(mesh, 40, mesh.position.y + 1)
+    const bootstrap = buildMmdSceneBootstrap(mesh, 40, mesh.position.y + 1, canvas.width / canvas.height)
+    const previewCameraOffset = new Vector3(
+      bootstrap.cameraPosition.x - bootstrap.modelOrigin.x,
+      bootstrap.cameraPosition.y - bootstrap.modelOrigin.y,
+      bootstrap.cameraPosition.z - bootstrap.modelOrigin.z,
+    ).multiplyScalar(MMD_PREVIEW_CAMERA_DISTANCE_SCALE)
     const camera = new PerspectiveCamera(40, canvas.width / canvas.height, 0.01, 1000)
-    camera.position.set(bootstrap.cameraPosition.x, bootstrap.cameraPosition.y, bootstrap.cameraPosition.z)
-    camera.lookAt(bootstrap.modelOrigin.x, bootstrap.modelOrigin.y, bootstrap.modelOrigin.z)
+    camera.position.set(
+      bootstrap.modelOrigin.x + previewCameraOffset.x,
+      bootstrap.modelOrigin.y + previewCameraOffset.y,
+      bootstrap.modelOrigin.z + previewCameraOffset.z,
+    )
+    camera.lookAt(
+      bootstrap.modelOrigin.x,
+      bootstrap.modelOrigin.y + bootstrap.modelSize.y * MMD_PREVIEW_LOOK_AT_Y_OFFSET_RATIO,
+      bootstrap.modelOrigin.z,
+    )
     camera.updateProjectionMatrix()
+    camera.updateMatrixWorld(true)
+    mesh.updateMatrixWorld(true)
+
+    await waitForObjectTextures(mesh)
+    markObjectMaterialsForUpdate(mesh)
 
     renderer.render(scene, camera)
     return canvas.toDataURL()

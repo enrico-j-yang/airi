@@ -147,7 +147,7 @@ function defaultLookAtTarget(nextEyeHeight: number): Vec3 {
   return {
     x: 0,
     y: nextEyeHeight,
-    z: -100,
+    z: 100,
   }
 }
 
@@ -275,7 +275,7 @@ async function loadModel() {
 
     updateResolvedBones()
     const nextEyeHeight = resolveEyeHeightFromModel(loaded.mesh, resolvedBones.value?.head)
-    emit('sceneBootstrap', buildMmdSceneBootstrap(loaded.mesh, camera.value.fov, nextEyeHeight))
+    emit('sceneBootstrap', buildMmdSceneBootstrap(loaded.mesh, camera.value.fov, nextEyeHeight, camera.value.aspect || 1))
     emit('loaded', modelSrc.value)
   }
   catch (error) {

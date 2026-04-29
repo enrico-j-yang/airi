@@ -6,6 +6,7 @@ import {
   dampMmdLookAtValue,
   resolveMmdLookAtAngles,
   resolveMmdLookAtBones,
+  resolveMmdTrackedBoneRotations,
 } from './look-at'
 
 describe('resolveMmdLookAtBones', () => {
@@ -48,5 +49,44 @@ describe('mMD look-at math', () => {
   it('damps values toward the target', () => {
     expect(dampMmdLookAtValue(0, 20, 10, 0.016)).toBeGreaterThan(0)
     expect(dampMmdLookAtValue(0, 20, 10, 0.016)).toBeLessThan(20)
+  })
+
+  it('resolves head-track as head-only rotation', () => {
+    expect(resolveMmdTrackedBoneRotations('head-track', {
+      yaw: 20,
+      pitch: -10,
+    }, {
+      head: 0.35,
+      eye: 1,
+    })).toEqual({
+      head: { yaw: 7, pitch: -3.5 },
+      eye: { yaw: 0, pitch: 0 },
+    })
+  })
+
+  it('keeps mouse mode driving both head and eyes', () => {
+    expect(resolveMmdTrackedBoneRotations('mouse', {
+      yaw: 20,
+      pitch: -10,
+    }, {
+      head: 0.35,
+      eye: 1,
+    })).toEqual({
+      head: { yaw: 7, pitch: -3.5 },
+      eye: { yaw: 20, pitch: -10 },
+    })
+  })
+
+  it('zeroes both head and eyes when mode is none', () => {
+    expect(resolveMmdTrackedBoneRotations('none', {
+      yaw: 20,
+      pitch: -10,
+    }, {
+      head: 0.35,
+      eye: 1,
+    })).toEqual({
+      head: { yaw: 0, pitch: 0 },
+      eye: { yaw: 0, pitch: 0 },
+    })
   })
 })

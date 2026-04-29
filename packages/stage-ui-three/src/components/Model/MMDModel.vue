@@ -13,6 +13,7 @@ import { computed, onMounted, onUnmounted, ref, shallowRef, toRefs, watch } from
 import {
   clampMmdLookAtAngles,
   dampMmdLookAtValue,
+  resolveMmdLookAtAngles,
   resolveMmdLookAtBones,
 } from '../../composables/mmd/look-at'
 import { useModelStore } from '../../stores/model-store'
@@ -67,6 +68,10 @@ const {
   mmdHeadBoneName,
   mmdLeftEyeBoneName,
   mmdRightEyeBoneName,
+  mmdPrimaryModelFormat,
+  mmdPrimaryModelPath,
+  mmdDetectedBones,
+  mmdUnresolvedTextures,
 } = storeToRefs(modelStore)
 
 const { onBeforeRender } = useLoop()
@@ -168,7 +173,7 @@ function updateResolvedBones() {
   if (!mmdRoot.value) {
     resolvedBones.value = undefined
     baseBoneRotations.value = {}
-    modelStore.mmdDetectedBones = {
+    mmdDetectedBones.value = {
       head: '',
       leftEye: '',
       rightEye: '',
@@ -188,7 +193,7 @@ function updateResolvedBones() {
     leftEye: cloneRotation(bones.leftEye),
     rightEye: cloneRotation(bones.rightEye),
   }
-  modelStore.mmdDetectedBones = {
+  mmdDetectedBones.value = {
     head: bones.head?.name ?? '',
     leftEye: bones.leftEye?.name ?? '',
     rightEye: bones.rightEye?.name ?? '',
@@ -269,9 +274,9 @@ async function loadModel() {
     scene.value?.add(loaded.mesh)
     applyModelTransform()
 
-    modelStore.mmdPrimaryModelPath = loaded.analysis.primaryModelPath
-    modelStore.mmdPrimaryModelFormat = loaded.analysis.primaryModelFormat
-    modelStore.mmdUnresolvedTextures = [...loaded.unresolvedTextures]
+    mmdPrimaryModelPath.value = loaded.analysis.primaryModelPath
+    mmdPrimaryModelFormat.value = loaded.analysis.primaryModelFormat
+    mmdUnresolvedTextures.value = [...loaded.unresolvedTextures]
 
     updateResolvedBones()
     const nextEyeHeight = resolveEyeHeightFromModel(loaded.mesh, resolvedBones.value?.head)
@@ -349,10 +354,7 @@ onBeforeRender(({ delta }) => {
 
   const target = new Vector3(lookAtTarget.value.x, lookAtTarget.value.y, lookAtTarget.value.z)
   const direction = target.sub(lookAtOrigin)
-  const clampedAngles = clampMmdLookAtAngles({
-    pitch: Math.atan2(direction.y, Math.hypot(direction.x, direction.z)) * 180 / Math.PI,
-    yaw: Math.atan2(direction.x, -direction.z) * 180 / Math.PI,
-  }, {
+  const clampedAngles = clampMmdLookAtAngles(resolveMmdLookAtAngles(direction), {
     maxPitchDeg: mmdLookAtMaxPitch.value,
     maxYawDeg: mmdLookAtMaxYaw.value,
   })

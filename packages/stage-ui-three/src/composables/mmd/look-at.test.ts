@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   clampMmdLookAtAngles,
   dampMmdLookAtValue,
+  resolveMmdLookAtAngles,
   resolveMmdLookAtBones,
 } from './look-at'
 
@@ -33,6 +34,13 @@ describe('resolveMmdLookAtBones', () => {
 })
 
 describe('mMD look-at math', () => {
+  it('treats positive z as the forward direction for zero-yaw targets', () => {
+    expect(resolveMmdLookAtAngles({ x: 0, y: 0, z: 1 })).toEqual({
+      pitch: 0,
+      yaw: 0,
+    })
+  })
+
   it('clamps yaw and pitch to configured bounds', () => {
     expect(clampMmdLookAtAngles({ yaw: 60, pitch: -40 }, { maxYawDeg: 30, maxPitchDeg: 20 })).toEqual({ yaw: 30, pitch: -20 })
   })

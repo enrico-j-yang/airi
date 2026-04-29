@@ -1182,6 +1182,12 @@ mmd:
     head-bone: 识别到的头部骨骼
     texture-warnings: 缺失纹理警告数
   look-at:
+    mode:
+      title: 模型注视方向
+      options:
+        camera: 看向相机
+        mouse: 看向鼠标
+        disabled: 关闭
     smoothing: 注视平滑度
     max-yaw: 左右最大转角
     max-pitch: 上下最大转角

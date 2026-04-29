@@ -2,6 +2,7 @@
 import type { ModelSettingsRuntimeSnapshot } from './runtime'
 
 import { useModelStore } from '@proj-airi/stage-ui-three'
+import { Button } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -32,12 +33,22 @@ const {
   mmdPrimaryModelPath,
   mmdDetectedBones,
   mmdUnresolvedTextures,
+  trackingMode,
 } = storeToRefs(modelStore)
 
 const controlsLocked = computed(() => props.runtimeSnapshot.controlsLocked)
 const settingsLockClass = computed(() => {
   return controlsLocked.value ? ['pointer-events-none', 'opacity-60'] : []
 })
+const trackingOptions = computed<{
+  value: 'camera' | 'mouse' | 'none'
+  label: string
+  class: string
+}[]>(() => [
+  { value: 'camera', label: t('settings.mmd.look-at.mode.options.camera'), class: 'col-start-3' },
+  { value: 'mouse', label: t('settings.mmd.look-at.mode.options.mouse'), class: 'col-start-4' },
+  { value: 'none', label: t('settings.mmd.look-at.mode.options.disabled'), class: 'col-start-5' },
+])
 </script>
 
 <template>
@@ -57,6 +68,21 @@ const settingsLockClass = computed(() => {
       <div>{{ t('settings.mmd.info.texture-warnings') }}: {{ mmdUnresolvedTextures.length }}</div>
     </div>
     <div grid="~ cols-5 gap-1" p-2 :class="settingsLockClass">
+      <div class="text-xs">
+        {{ t('settings.mmd.look-at.mode.title') }}:
+      </div>
+      <div />
+      <template v-for="option in trackingOptions" :key="option.value">
+        <Button
+          :class="[option.class, 'w-auto']"
+          :disabled="controlsLocked"
+          size="sm"
+          :variant="trackingMode === option.value ? 'primary' : 'secondary'"
+          :label="option.label"
+          @click="trackingMode = option.value"
+        />
+      </template>
+
       <PropertyNumber
         v-model="mmdLookAtSmoothing"
         :config="{ min: 1, max: 30, step: 1, label: t('settings.mmd.look-at.smoothing'), disabled: controlsLocked }"

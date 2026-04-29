@@ -19,6 +19,7 @@ import { HoloCoupon } from '@proj-airi/stage-ui/components'
 import {
   createEmptyModelSettingsRuntimeSnapshot,
   resolveComponentStateToRuntimePhase,
+  resolveThreeModelSettingsControlsLocked,
 } from '@proj-airi/stage-ui/components/scenarios/settings/model-settings/runtime'
 import { WidgetStage } from '@proj-airi/stage-ui/components/scenes'
 import { useAudioRecorder } from '@proj-airi/stage-ui/composables/audio/audio-recorder'
@@ -139,14 +140,17 @@ const modelSettingsRuntimeSnapshot = computed<ModelSettingsRuntimeSnapshot>(() =
     })
   }
 
-  if (stageModelRenderer.value === 'vrm') {
+  if (stageModelRenderer.value === 'vrm' || stageModelRenderer.value === 'mmd') {
     return createEmptyModelSettingsRuntimeSnapshot({
       ownerInstanceId: modelSettingsRuntimeOwnerInstanceId,
-      renderer: 'vrm',
+      renderer: stageModelRenderer.value,
       phase: hasModel ? scenePhase.value : 'no-model',
-      controlsLocked: hasModel
-        ? (!stageMounted.value || sceneMutationLocked.value)
-        : false,
+      controlsLocked: resolveThreeModelSettingsControlsLocked({
+        hasModel,
+        renderer: stageModelRenderer.value,
+        sceneMutationLocked: sceneMutationLocked.value,
+        stageMounted: stageMounted.value,
+      }),
       previewAvailable: hasModel,
       canCapturePreview: false,
       updatedAt: Date.now(),

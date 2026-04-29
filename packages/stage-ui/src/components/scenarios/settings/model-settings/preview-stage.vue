@@ -11,6 +11,7 @@ import { useSettings } from '../../../../stores/settings'
 import {
   createEmptyModelSettingsRuntimeSnapshot,
   resolveComponentStateToRuntimePhase,
+  resolveThreeModelSettingsControlsLocked,
 } from './runtime'
 
 const props = defineProps<{
@@ -99,7 +100,12 @@ const runtimeSnapshot = computed<ModelSettingsRuntimeSnapshot>(() => {
       ownerInstanceId: vrmPreviewStageInstanceId,
       renderer: stageModelRenderer.value,
       phase: hasModel ? scenePhase.value : 'no-model',
-      controlsLocked: hasModel ? sceneMutationLocked.value : false,
+      controlsLocked: resolveThreeModelSettingsControlsLocked({
+        hasModel,
+        renderer: stageModelRenderer.value,
+        sceneMutationLocked: sceneMutationLocked.value,
+        stageMounted: scenePhase.value === 'mounted',
+      }),
       previewAvailable: hasModel,
       canCapturePreview: !!vrmSceneRef.value?.canvasElement(),
       updatedAt: Date.now(),

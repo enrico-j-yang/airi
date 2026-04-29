@@ -38,3 +38,19 @@ export function resolveComponentStateToRuntimePhase(
 
   return componentState
 }
+
+export function resolveThreeModelSettingsControlsLocked(options: {
+  hasModel: boolean
+  renderer: 'vrm' | 'mmd'
+  sceneMutationLocked: boolean
+  stageMounted?: boolean
+}) {
+  if (!options.hasModel)
+    return false
+
+  if (options.renderer === 'mmd') {
+    return false
+  }
+
+  return !options.stageMounted || options.sceneMutationLocked
+}

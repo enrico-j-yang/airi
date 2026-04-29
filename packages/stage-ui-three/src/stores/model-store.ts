@@ -178,10 +178,10 @@ export const useModelStore = defineStore('modelStore', () => {
   const mmdHeadBoneName = useLocalStorage('settings/stage-ui-three/mmd/head-bone-name', '')
   const mmdLeftEyeBoneName = useLocalStorage('settings/stage-ui-three/mmd/left-eye-bone-name', '')
   const mmdRightEyeBoneName = useLocalStorage('settings/stage-ui-three/mmd/right-eye-bone-name', '')
-  const mmdPrimaryModelPath = ref('')
-  const mmdPrimaryModelFormat = ref<'pmx' | 'pmd' | undefined>()
-  const mmdDetectedBones = ref<MmdDetectedBones>(createEmptyMmdDetectedBones())
-  const mmdUnresolvedTextures = ref<string[]>([])
+  const mmdPrimaryModelPath = useLocalStorage('settings/stage-ui-three/mmd/primary-model-path', '')
+  const mmdPrimaryModelFormat = useLocalStorage<'pmx' | 'pmd' | undefined>('settings/stage-ui-three/mmd/primary-model-format', undefined)
+  const mmdDetectedBones = useLocalStorage<MmdDetectedBones>('settings/stage-ui-three/mmd/detected-bones', createEmptyMmdDetectedBones())
+  const mmdUnresolvedTextures = useLocalStorage<string[]>('settings/stage-ui-three/mmd/unresolved-textures', [])
 
   function resetMmdRuntimeState() {
     mmdPrimaryModelPath.value = ''

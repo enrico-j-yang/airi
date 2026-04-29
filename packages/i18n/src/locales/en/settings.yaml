@@ -1237,6 +1237,12 @@ mmd:
     head-bone: Resolved head bone
     texture-warnings: Missing texture warnings
   look-at:
+    mode:
+      title: Look-at mode
+      options:
+        camera: Look at camera
+        mouse: Look at mouse
+        disabled: Disabled
     smoothing: Look-at smoothing
     max-yaw: Max yaw
     max-pitch: Max pitch

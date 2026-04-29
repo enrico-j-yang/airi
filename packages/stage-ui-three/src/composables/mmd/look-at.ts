@@ -51,6 +51,13 @@ export function clampMmdLookAtAngles(angles: { yaw: number, pitch: number }, lim
   }
 }
 
+export function resolveMmdLookAtAngles(direction: { x: number, y: number, z: number }) {
+  return {
+    pitch: Math.atan2(direction.y, Math.hypot(direction.x, direction.z)) * 180 / Math.PI,
+    yaw: Math.atan2(direction.x, direction.z) * 180 / Math.PI,
+  }
+}
+
 export function dampMmdLookAtValue(current: number, target: number, smoothing: number, delta: number) {
   const blend = 1 - Math.exp(-Math.max(smoothing, 0.0001) * delta)
   return current + (target - current) * blend

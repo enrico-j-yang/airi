@@ -77,6 +77,19 @@ describe('mMD look-at math', () => {
     })
   })
 
+  it('keeps camera mode driving both head and eyes', () => {
+    expect(resolveMmdTrackedBoneRotations('camera', {
+      yaw: 20,
+      pitch: -10,
+    }, {
+      head: 0.35,
+      eye: 1,
+    })).toEqual({
+      head: { yaw: 7, pitch: -3.5 },
+      eye: { yaw: 20, pitch: -10 },
+    })
+  })
+
   it('zeroes both head and eyes when mode is none', () => {
     expect(resolveMmdTrackedBoneRotations('none', {
       yaw: 20,

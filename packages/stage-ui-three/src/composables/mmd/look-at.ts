@@ -5,6 +5,7 @@ const leftEyeCandidates = ['左目', '左目先', 'eye_l', 'leftEye', 'LeftEye']
 const rightEyeCandidates = ['右目', '右目先', 'eye_r', 'rightEye', 'RightEye']
 
 export type MmdTrackingMode = 'camera' | 'mouse' | 'head-track' | 'none'
+export type MmdTrackingTargetSource = 'camera' | 'mouse' | 'default'
 
 interface MmdTrackedRotation {
   yaw: number
@@ -105,4 +106,16 @@ export function resolveMmdTrackedBoneRotations(
       pitch: angles.pitch * influences.eye,
     },
   }
+}
+
+export function resolveMmdTrackingTargetSource(mode: MmdTrackingMode): MmdTrackingTargetSource {
+  if (mode === 'camera') {
+    return 'camera'
+  }
+
+  if (mode === 'mouse' || mode === 'head-track') {
+    return 'mouse'
+  }
+
+  return 'default'
 }

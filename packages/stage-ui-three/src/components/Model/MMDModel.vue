@@ -15,6 +15,8 @@ import {
   dampMmdLookAtValue,
   resolveMmdLookAtAngles,
   resolveMmdLookAtBones,
+  resolveMmdTrackedBoneRotations,
+  resolveMmdTrackingTargetSource,
 } from '../../composables/mmd/look-at'
 import { useModelStore } from '../../stores/model-store'
 import { projectClientPointToLookAtTarget } from '../../utils/look-at-target'
@@ -29,7 +31,6 @@ const props = withDefaults(defineProps<{
   modelOffset: Vec3
   modelRotationY: number
   lookAtTarget: Vec3
-  trackingMode: string
   eyeHeight: number
   cameraPosition: Vec3
   camera: PerspectiveCamera
@@ -51,7 +52,6 @@ const {
   modelOffset,
   modelRotationY,
   lookAtTarget,
-  trackingMode,
   eyeHeight,
   cameraPosition,
   camera,
@@ -72,6 +72,7 @@ const {
   mmdPrimaryModelPath,
   mmdDetectedBones,
   mmdUnresolvedTextures,
+  mmdTrackingMode,
 } = storeToRefs(modelStore)
 
 const { onBeforeRender } = useLoop()
@@ -326,7 +327,9 @@ function resolveTrackingTargetFromMouse(clientX: number, clientY: number) {
 function syncTrackingMode() {
   clearLookAtTrackingWatches()
 
-  if (trackingMode.value === 'camera') {
+  const source = resolveMmdTrackingTargetSource(mmdTrackingMode.value)
+
+  if (source === 'camera') {
     stopCameraWatch = watch(cameraPosition, newPosition => emit('lookAtTarget', { ...newPosition }), {
       deep: true,
       immediate: true,
@@ -334,7 +337,7 @@ function syncTrackingMode() {
     return
   }
 
-  if (trackingMode.value === 'mouse') {
+  if (source === 'mouse') {
     stopMouseWatch = watch([mouseX, mouseY], ([newX, newY]) => {
       emit('lookAtTarget', resolveTrackingTargetFromMouse(newX, newY))
     }, { immediate: true })
@@ -358,11 +361,19 @@ onBeforeRender(({ delta }) => {
     maxPitchDeg: mmdLookAtMaxPitch.value,
     maxYawDeg: mmdLookAtMaxYaw.value,
   })
+  const targetRotations = resolveMmdTrackedBoneRotations(
+    mmdTrackingMode.value,
+    clampedAngles,
+    {
+      head: mmdHeadInfluence.value,
+      eye: mmdEyeInfluence.value,
+    },
+  )
 
-  currentRotation.value.headYaw = dampMmdLookAtValue(currentRotation.value.headYaw, clampedAngles.yaw * mmdHeadInfluence.value, mmdLookAtSmoothing.value, delta)
-  currentRotation.value.headPitch = dampMmdLookAtValue(currentRotation.value.headPitch, clampedAngles.pitch * mmdHeadInfluence.value, mmdLookAtSmoothing.value, delta)
-  currentRotation.value.eyeYaw = dampMmdLookAtValue(currentRotation.value.eyeYaw, clampedAngles.yaw * mmdEyeInfluence.value, mmdLookAtSmoothing.value, delta)
-  currentRotation.value.eyePitch = dampMmdLookAtValue(currentRotation.value.eyePitch, clampedAngles.pitch * mmdEyeInfluence.value, mmdLookAtSmoothing.value, delta)
+  currentRotation.value.headYaw = dampMmdLookAtValue(currentRotation.value.headYaw, targetRotations.head.yaw, mmdLookAtSmoothing.value, delta)
+  currentRotation.value.headPitch = dampMmdLookAtValue(currentRotation.value.headPitch, targetRotations.head.pitch, mmdLookAtSmoothing.value, delta)
+  currentRotation.value.eyeYaw = dampMmdLookAtValue(currentRotation.value.eyeYaw, targetRotations.eye.yaw, mmdLookAtSmoothing.value, delta)
+  currentRotation.value.eyePitch = dampMmdLookAtValue(currentRotation.value.eyePitch, targetRotations.eye.pitch, mmdLookAtSmoothing.value, delta)
 
   applyBoneLookAt(
     resolvedBones.value.head,
@@ -401,7 +412,7 @@ onMounted(() => {
     updateResolvedBones()
   }, { immediate: true })
 
-  watch(trackingMode, () => {
+  watch(mmdTrackingMode, () => {
     syncTrackingMode()
   }, { immediate: true })
 })

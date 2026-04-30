@@ -7,6 +7,7 @@ import {
   resolveMmdLookAtAngles,
   resolveMmdLookAtBones,
   resolveMmdTrackedBoneRotations,
+  resolveMmdTrackingTargetSource,
 } from './look-at'
 
 describe('resolveMmdLookAtBones', () => {
@@ -101,5 +102,17 @@ describe('mMD look-at math', () => {
       head: { yaw: 0, pitch: 0 },
       eye: { yaw: 0, pitch: 0 },
     })
+  })
+
+  it('uses camera position as the tracking source in camera mode', () => {
+    expect(resolveMmdTrackingTargetSource('camera')).toBe('camera')
+  })
+
+  it('uses mouse coordinates as the tracking source in head-track mode', () => {
+    expect(resolveMmdTrackingTargetSource('head-track')).toBe('mouse')
+  })
+
+  it('uses the default forward target in none mode', () => {
+    expect(resolveMmdTrackingTargetSource('none')).toBe('default')
   })
 })

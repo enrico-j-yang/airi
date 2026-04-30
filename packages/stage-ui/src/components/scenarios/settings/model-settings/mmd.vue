@@ -33,7 +33,7 @@ const {
   mmdPrimaryModelPath,
   mmdDetectedBones,
   mmdUnresolvedTextures,
-  trackingMode,
+  mmdTrackingMode,
 } = storeToRefs(modelStore)
 
 const controlsLocked = computed(() => props.runtimeSnapshot.controlsLocked)
@@ -41,12 +41,13 @@ const settingsLockClass = computed(() => {
   return controlsLocked.value ? ['pointer-events-none', 'opacity-60'] : []
 })
 const trackingOptions = computed<{
-  value: 'camera' | 'mouse' | 'none'
+  value: 'camera' | 'mouse' | 'head-track' | 'none'
   label: string
   class: string
 }[]>(() => [
-  { value: 'camera', label: t('settings.mmd.look-at.mode.options.camera'), class: 'col-start-3' },
-  { value: 'mouse', label: t('settings.mmd.look-at.mode.options.mouse'), class: 'col-start-4' },
+  { value: 'camera', label: t('settings.mmd.look-at.mode.options.camera'), class: 'col-start-2' },
+  { value: 'mouse', label: t('settings.mmd.look-at.mode.options.mouse'), class: 'col-start-3' },
+  { value: 'head-track', label: t('settings.mmd.look-at.mode.options.head-track'), class: 'col-start-4' },
   { value: 'none', label: t('settings.mmd.look-at.mode.options.disabled'), class: 'col-start-5' },
 ])
 </script>
@@ -77,9 +78,9 @@ const trackingOptions = computed<{
           :class="[option.class, 'w-auto']"
           :disabled="controlsLocked"
           size="sm"
-          :variant="trackingMode === option.value ? 'primary' : 'secondary'"
+          :variant="mmdTrackingMode === option.value ? 'primary' : 'secondary'"
           :label="option.label"
-          @click="trackingMode = option.value"
+          @click="mmdTrackingMode = option.value"
         />
       </template>
 

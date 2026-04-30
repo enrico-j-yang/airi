@@ -31,6 +31,7 @@ const props = withDefaults(defineProps<{
   modelOffset: Vec3
   modelRotationY: number
   lookAtTarget: Vec3
+  trackingMode: string
   eyeHeight: number
   cameraPosition: Vec3
   camera: PerspectiveCamera

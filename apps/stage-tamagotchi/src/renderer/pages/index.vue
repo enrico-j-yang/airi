@@ -29,6 +29,7 @@ import { useLive2d } from '@proj-airi/stage-ui/stores/live2d'
 import { useHearingSpeechInputPipeline } from '@proj-airi/stage-ui/stores/modules/hearing'
 import { useOnboardingStore } from '@proj-airi/stage-ui/stores/onboarding'
 import { useSettings, useSettingsAudioDevice } from '@proj-airi/stage-ui/stores/settings'
+import { isThreeStageModelRenderer } from '@proj-airi/stage-ui/stores/settings/stage-model'
 import { refDebounced, useBroadcastChannel } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, onUnmounted, ref, toRef, watch } from 'vue'
@@ -99,7 +100,7 @@ const isTransparent = computed(() => {
   if (stagePaused.value || componentStateStage.value !== 'mounted' || !fadeOnHoverEnabled.value)
     return true
 
-  if (stageModelRenderer.value === 'vrm')
+  if (isThreeStageModelRenderer(stageModelRenderer.value))
     return shouldUseThreeTransparencyHitTest.value ? isTransparentByThree.value : true
 
   if (stageModelRenderer.value === 'live2d')

@@ -112,6 +112,10 @@ describe('mMD look-at math', () => {
     expect(resolveMmdTrackingTargetSource('head-track')).toBe('mouse')
   })
 
+  it('falls back to the neutral forward target while paused', () => {
+    expect(resolveMmdTrackingTargetSource('head-track', { paused: true })).toBe('default')
+  })
+
   it('uses the default forward target in none mode', () => {
     expect(resolveMmdTrackingTargetSource('none')).toBe('default')
   })

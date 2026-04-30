@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useSettings } from '@proj-airi/stage-ui/stores/settings'
+import { supportsStageDepthViewControl } from '@proj-airi/stage-ui/stores/settings/stage-model'
 import { Button } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
 
@@ -31,7 +32,7 @@ function handleViewControlsToggle(targetMode: 'x' | 'y' | 'z' | 'scale') {
         <Button variant="secondary-muted" :toggled="mode === 'y'" w-full @click="handleViewControlsToggle('y')">
           Y
         </Button>
-        <Button v-if="stageModelRenderer === 'vrm'" variant="secondary-muted" :toggled="mode === 'z'" w-full @click="handleViewControlsToggle('z')">
+        <Button v-if="supportsStageDepthViewControl(stageModelRenderer)" variant="secondary-muted" :toggled="mode === 'z'" w-full @click="handleViewControlsToggle('z')">
           Z
         </Button>
         <Button variant="secondary-muted" :toggled="mode === 'scale'" w-full @click="handleViewControlsToggle('scale')">

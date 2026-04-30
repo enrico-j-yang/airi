@@ -108,7 +108,13 @@ export function resolveMmdTrackedBoneRotations(
   }
 }
 
-export function resolveMmdTrackingTargetSource(mode: MmdTrackingMode): MmdTrackingTargetSource {
+export function resolveMmdTrackingTargetSource(mode: MmdTrackingMode, options: {
+  paused?: boolean
+} = {}): MmdTrackingTargetSource {
+  if (options.paused) {
+    return 'default'
+  }
+
   if (mode === 'camera') {
     return 'camera'
   }

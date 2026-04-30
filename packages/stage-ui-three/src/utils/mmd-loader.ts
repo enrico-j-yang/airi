@@ -136,20 +136,31 @@ export async function loadMmdSceneFromZip(file: Blob & { name?: string }) {
   }
 
   const modelObjectUrl = URL.createObjectURL(new Blob([await modelEntry.async('arraybuffer')]))
+
+  function revokeAll() {
+    URL.revokeObjectURL(modelObjectUrl)
+    objectUrls.forEach(url => URL.revokeObjectURL(url))
+    objectUrls.clear()
+  }
+
   const modelUrl = withMmdModelExtension(modelObjectUrl, analysis.primaryModelFormat)
   const loader = new MMDLoader(manager)
   loader.setResourcePath(`${archiveResourceRoot}${modelDirectory}`)
-  const mesh = await loader.loadAsync(modelUrl)
+
+  let mesh
+  try {
+    mesh = await loader.loadAsync(modelUrl)
+  }
+  catch (error) {
+    revokeAll()
+    throw error
+  }
 
   return {
     analysis,
     mesh,
     unresolvedTextures: [...unresolvedTextures],
-    revokeAll() {
-      URL.revokeObjectURL(modelObjectUrl)
-      objectUrls.forEach(url => URL.revokeObjectURL(url))
-      objectUrls.clear()
-    },
+    revokeAll,
   }
 }
 

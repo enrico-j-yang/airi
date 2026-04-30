@@ -2,6 +2,7 @@
 import type { Bone, Object3D, PerspectiveCamera } from 'three'
 import type { WatchStopHandle } from 'vue'
 
+import type { MmdTrackingMode } from '../../composables/mmd/look-at'
 import type { SceneBootstrap, Vec3 } from '../../stores/model-store'
 
 import { useLoop, useTresContext } from '@tresjs/core'
@@ -13,6 +14,7 @@ import { computed, onMounted, onUnmounted, ref, shallowRef, toRefs, watch } from
 import {
   clampMmdLookAtAngles,
   dampMmdLookAtValue,
+
   resolveMmdLookAtAngles,
   resolveMmdLookAtBones,
   resolveMmdTrackedBoneRotations,
@@ -21,6 +23,7 @@ import {
 import { useModelStore } from '../../stores/model-store'
 import { projectClientPointToLookAtTarget } from '../../utils/look-at-target'
 import { buildMmdSceneBootstrap, loadMmdSceneFromZip } from '../../utils/mmd-loader'
+import { disposeObject3DResources } from '../../utils/three-disposal'
 
 type ModelLoadReason = 'initial-load' | 'model-reload' | 'model-switch'
 
@@ -31,7 +34,7 @@ const props = withDefaults(defineProps<{
   modelOffset: Vec3
   modelRotationY: number
   lookAtTarget: Vec3
-  trackingMode: string
+  trackingMode: MmdTrackingMode
   eyeHeight: number
   cameraPosition: Vec3
   camera: PerspectiveCamera
@@ -50,9 +53,11 @@ const emit = defineEmits<{
 const {
   lastCommittedModelSrc,
   modelSrc,
+  paused,
   modelOffset,
   modelRotationY,
   lookAtTarget,
+  trackingMode,
   eyeHeight,
   cameraPosition,
   camera,
@@ -73,7 +78,6 @@ const {
   mmdPrimaryModelPath,
   mmdDetectedBones,
   mmdUnresolvedTextures,
-  mmdTrackingMode,
 } = storeToRefs(modelStore)
 
 const { onBeforeRender } = useLoop()
@@ -218,8 +222,10 @@ function resolveEyeHeightFromModel(root: Object3D, headBone?: Bone) {
 }
 
 function cleanupLoadedModel(resetRuntimeState = true) {
-  mmdRoot.value?.removeFromParent()
+  const detachedRoot = mmdRoot.value
+  detachedRoot?.removeFromParent()
   mmdRoot.value = undefined
+  disposeObject3DResources(detachedRoot)
   disposeResources.value?.()
   disposeResources.value = undefined
   resolvedBones.value = undefined
@@ -234,6 +240,24 @@ function cleanupLoadedModel(resetRuntimeState = true) {
   if (resetRuntimeState) {
     modelStore.resetMmdRuntimeState()
   }
+}
+
+function resetEyeTrackingState() {
+  currentRotation.value.eyeYaw = 0
+  currentRotation.value.eyePitch = 0
+
+  applyBoneLookAt(
+    resolvedBones.value?.leftEye,
+    baseBoneRotations.value.leftEye,
+    0,
+    0,
+  )
+  applyBoneLookAt(
+    resolvedBones.value?.rightEye,
+    baseBoneRotations.value.rightEye,
+    0,
+    0,
+  )
 }
 
 async function loadModel() {
@@ -328,7 +352,11 @@ function resolveTrackingTargetFromMouse(clientX: number, clientY: number) {
 function syncTrackingMode() {
   clearLookAtTrackingWatches()
 
-  const source = resolveMmdTrackingTargetSource(mmdTrackingMode.value)
+  if (trackingMode.value === 'head-track' || paused.value) {
+    resetEyeTrackingState()
+  }
+
+  const source = resolveMmdTrackingTargetSource(trackingMode.value as MmdTrackingMode, { paused: paused.value })
 
   if (source === 'camera') {
     stopCameraWatch = watch(cameraPosition, newPosition => emit('lookAtTarget', { ...newPosition }), {
@@ -349,7 +377,7 @@ function syncTrackingMode() {
 }
 
 onBeforeRender(({ delta }) => {
-  if (!mmdRoot.value || !resolvedBones.value) {
+  if (paused.value || !mmdRoot.value || !resolvedBones.value) {
     return
   }
 
@@ -363,7 +391,7 @@ onBeforeRender(({ delta }) => {
     maxYawDeg: mmdLookAtMaxYaw.value,
   })
   const targetRotations = resolveMmdTrackedBoneRotations(
-    mmdTrackingMode.value,
+    trackingMode.value as MmdTrackingMode,
     clampedAngles,
     {
       head: mmdHeadInfluence.value,
@@ -413,7 +441,7 @@ onMounted(() => {
     updateResolvedBones()
   }, { immediate: true })
 
-  watch(mmdTrackingMode, () => {
+  watch([trackingMode, paused], () => {
     syncTrackingMode()
   }, { immediate: true })
 })

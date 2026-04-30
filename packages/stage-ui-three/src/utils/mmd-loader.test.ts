@@ -100,6 +100,21 @@ describe('loadMmdSceneFromZip', () => {
     expect(loadAsyncMock).toHaveBeenCalledWith(`${modelObjectUrl}#model.${format}`)
     expect(loadedScene.mesh).toEqual({ meshUrl: `${modelObjectUrl}#model.${format}`, mesh })
   })
+
+  it('revokes prepared object URLs when the loader fails', async () => {
+    const archive = createArchiveAnalysis('pmx')
+
+    analyzeMmdArchiveMock.mockResolvedValue(archive)
+    jsZipLoadAsyncMock.mockResolvedValue(createZipArchive(archive.primaryModelPath))
+    loadAsyncMock.mockRejectedValue(new Error('broken model'))
+
+    await expect(loadMmdSceneFromZip(new File([Uint8Array.of(1)], 'broken.zip')))
+      .rejects
+      .toThrow('broken model')
+
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith(modelObjectUrl)
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith(textureObjectUrl)
+  })
 })
 
 function createArchiveAnalysis(format: MmdModelFormat): MmdArchiveAnalysis {

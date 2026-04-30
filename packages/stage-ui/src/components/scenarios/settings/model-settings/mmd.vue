@@ -2,10 +2,11 @@
 import type { ModelSettingsRuntimeSnapshot } from './runtime'
 
 import { useModelStore } from '@proj-airi/stage-ui-three'
-import { Button } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import ThreeScene from './three-scene.vue'
 
 import { Container, PropertyNumber } from '../../../data-pane'
 
@@ -50,9 +51,23 @@ const trackingOptions = computed<{
   { value: 'head-track', label: t('settings.mmd.look-at.mode.options.head-track'), class: 'col-start-4' },
   { value: 'none', label: t('settings.mmd.look-at.mode.options.disabled'), class: 'col-start-5' },
 ])
+
+function updateTrackingMode(value: string) {
+  mmdTrackingMode.value = value as typeof mmdTrackingMode.value
+}
 </script>
 
 <template>
+  <ThreeScene
+    :allow-extract-colors="allowExtractColors"
+    :palette="palette"
+    :runtime-snapshot="runtimeSnapshot"
+    :tracking-mode="mmdTrackingMode"
+    :tracking-options="trackingOptions"
+    :tracking-title="t('settings.mmd.look-at.mode.title')"
+    @extract-colors-from-model="$emit('extractColorsFromModel')"
+    @update:tracking-mode="updateTrackingMode"
+  />
   <Container
     :title="t('settings.mmd.title')"
     icon="i-solar:people-nearby-bold-duotone"
@@ -69,21 +84,6 @@ const trackingOptions = computed<{
       <div>{{ t('settings.mmd.info.texture-warnings') }}: {{ mmdUnresolvedTextures.length }}</div>
     </div>
     <div grid="~ cols-5 gap-1" p-2 :class="settingsLockClass">
-      <div class="text-xs">
-        {{ t('settings.mmd.look-at.mode.title') }}:
-      </div>
-      <div />
-      <template v-for="option in trackingOptions" :key="option.value">
-        <Button
-          :class="[option.class, 'w-auto']"
-          :disabled="controlsLocked"
-          size="sm"
-          :variant="mmdTrackingMode === option.value ? 'primary' : 'secondary'"
-          :label="option.label"
-          @click="mmdTrackingMode = option.value"
-        />
-      </template>
-
       <PropertyNumber
         v-model="mmdLookAtSmoothing"
         :config="{ min: 1, max: 30, step: 1, label: t('settings.mmd.look-at.smoothing'), disabled: controlsLocked }"

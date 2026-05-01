@@ -6,6 +6,7 @@ import {
   dampMmdLookAtValue,
   resolveMmdLookAtAngles,
   resolveMmdLookAtBones,
+  resolveMmdScreenLookAtAngles,
   resolveMmdTrackedBoneRotations,
   resolveMmdTrackingTargetSource,
 } from './look-at'
@@ -45,6 +46,38 @@ describe('mMD look-at math', () => {
 
   it('clamps yaw and pitch to configured bounds', () => {
     expect(clampMmdLookAtAngles({ yaw: 60, pitch: -40 }, { maxYawDeg: 30, maxPitchDeg: 20 })).toEqual({ yaw: 30, pitch: -20 })
+  })
+
+  it('maps centered client coordinates to neutral head-track angles even when the canvas is offset', () => {
+    expect(resolveMmdScreenLookAtAngles({
+      clientX: 300,
+      clientY: 250,
+      viewportWidth: 400,
+      viewportHeight: 400,
+      viewportLeft: 100,
+      viewportTop: 50,
+      maxYawDeg: 30,
+      maxPitchDeg: 20,
+    })).toEqual({
+      yaw: 0,
+      pitch: 0,
+    })
+  })
+
+  it('maps screen edges to the configured head-track bounds', () => {
+    expect(resolveMmdScreenLookAtAngles({
+      clientX: 500,
+      clientY: 50,
+      viewportWidth: 400,
+      viewportHeight: 400,
+      viewportLeft: 100,
+      viewportTop: 50,
+      maxYawDeg: 30,
+      maxPitchDeg: 20,
+    })).toEqual({
+      yaw: 30,
+      pitch: -20,
+    })
   })
 
   it('damps values toward the target', () => {

@@ -17,6 +17,7 @@ import {
 
   resolveMmdLookAtAngles,
   resolveMmdLookAtBones,
+  resolveMmdScreenLookAtAngles,
   resolveMmdTrackedBoneRotations,
   resolveMmdTrackingTargetSource,
 } from '../../composables/mmd/look-at'
@@ -81,7 +82,7 @@ const {
 } = storeToRefs(modelStore)
 
 const { onBeforeRender } = useLoop()
-const { x: mouseX, y: mouseY } = useMouse()
+const { x: mouseX, y: mouseY } = useMouse({ type: 'client' })
 
 const mmdRoot = shallowRef<Object3D>()
 const disposeResources = shallowRef<(() => void) | undefined>()
@@ -338,14 +339,33 @@ function applyBoneLookAt(
 
 function resolveTrackingTargetFromMouse(clientX: number, clientY: number) {
   const canvas = renderer?.instance.domElement
+  const rect = canvas?.getBoundingClientRect()
 
   return projectClientPointToLookAtTarget({
     camera: camera.value,
     clientX,
     clientY,
     planeDistance: 1,
-    viewportHeight: canvas?.clientHeight ?? window.innerHeight,
-    viewportWidth: canvas?.clientWidth ?? window.innerWidth,
+    viewportHeight: rect?.height ?? window.innerHeight,
+    viewportLeft: rect?.left ?? 0,
+    viewportTop: rect?.top ?? 0,
+    viewportWidth: rect?.width ?? window.innerWidth,
+  })
+}
+
+function resolveHeadTrackAnglesFromMouse(clientX: number, clientY: number) {
+  const canvas = renderer?.instance.domElement
+  const rect = canvas?.getBoundingClientRect()
+
+  return resolveMmdScreenLookAtAngles({
+    clientX,
+    clientY,
+    maxPitchDeg: mmdLookAtMaxPitch.value,
+    maxYawDeg: mmdLookAtMaxYaw.value,
+    viewportHeight: rect?.height ?? window.innerHeight,
+    viewportLeft: rect?.left ?? 0,
+    viewportTop: rect?.top ?? 0,
+    viewportWidth: rect?.width ?? window.innerWidth,
   })
 }
 
@@ -384,12 +404,16 @@ onBeforeRender(({ delta }) => {
   const lookAtOrigin = new Vector3()
   ;(resolvedBones.value.head ?? mmdRoot.value).getWorldPosition(lookAtOrigin)
 
-  const target = new Vector3(lookAtTarget.value.x, lookAtTarget.value.y, lookAtTarget.value.z)
-  const direction = target.sub(lookAtOrigin)
-  const clampedAngles = clampMmdLookAtAngles(resolveMmdLookAtAngles(direction), {
-    maxPitchDeg: mmdLookAtMaxPitch.value,
-    maxYawDeg: mmdLookAtMaxYaw.value,
-  })
+  const clampedAngles = trackingMode.value === 'head-track'
+    ? resolveHeadTrackAnglesFromMouse(mouseX.value, mouseY.value)
+    : (() => {
+        const target = new Vector3(lookAtTarget.value.x, lookAtTarget.value.y, lookAtTarget.value.z)
+        const direction = target.sub(lookAtOrigin)
+        return clampMmdLookAtAngles(resolveMmdLookAtAngles(direction), {
+          maxPitchDeg: mmdLookAtMaxPitch.value,
+          maxYawDeg: mmdLookAtMaxYaw.value,
+        })
+      })()
   const targetRotations = resolveMmdTrackedBoneRotations(
     trackingMode.value as MmdTrackingMode,
     clampedAngles,

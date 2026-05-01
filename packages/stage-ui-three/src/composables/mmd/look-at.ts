@@ -3,6 +3,7 @@ import type { Bone, Object3D } from 'three'
 const headCandidates = ['頭', 'head', 'Head']
 const leftEyeCandidates = ['左目', '左目先', 'eye_l', 'leftEye', 'LeftEye']
 const rightEyeCandidates = ['右目', '右目先', 'eye_r', 'rightEye', 'RightEye']
+const EPSILON = 1e-8
 
 export type MmdTrackingMode = 'camera' | 'mouse' | 'head-track' | 'none'
 export type MmdTrackingTargetSource = 'camera' | 'mouse' | 'default'
@@ -10,6 +11,17 @@ export type MmdTrackingTargetSource = 'camera' | 'mouse' | 'default'
 interface MmdTrackedRotation {
   yaw: number
   pitch: number
+}
+
+interface MmdScreenLookAtParams {
+  clientX: number
+  clientY: number
+  viewportWidth: number
+  viewportHeight: number
+  viewportLeft?: number
+  viewportTop?: number
+  maxYawDeg: number
+  maxPitchDeg: number
 }
 
 function resolveBoneNameMap(root: Object3D) {
@@ -63,6 +75,31 @@ export function resolveMmdLookAtAngles(direction: { x: number, y: number, z: num
   return {
     pitch: Math.atan2(direction.y, Math.hypot(direction.x, direction.z)) * 180 / Math.PI,
     yaw: Math.atan2(direction.x, direction.z) * 180 / Math.PI,
+  }
+}
+
+export function resolveMmdScreenLookAtAngles(params: MmdScreenLookAtParams) {
+  const {
+    clientX,
+    clientY,
+    viewportWidth,
+    viewportHeight,
+    viewportLeft = 0,
+    viewportTop = 0,
+    maxYawDeg,
+    maxPitchDeg,
+  } = params
+
+  const safeViewportWidth = Math.max(viewportWidth, 1)
+  const safeViewportHeight = Math.max(viewportHeight, 1)
+  const normalizedX = Math.max(-1, Math.min(1, ((clientX - viewportLeft) / safeViewportWidth) * 2 - 1))
+  const normalizedY = Math.max(-1, Math.min(1, -((clientY - viewportTop) / safeViewportHeight) * 2 + 1))
+  const yaw = normalizedX * maxYawDeg
+  const pitch = -normalizedY * maxPitchDeg
+
+  return {
+    yaw: Math.abs(yaw) < EPSILON ? 0 : yaw,
+    pitch: Math.abs(pitch) < EPSILON ? 0 : pitch,
   }
 }
 

@@ -47,7 +47,7 @@ export function buildMmdSceneBootstrap(root: Object3D, cameraFov: number, eyeHei
   const modelCenter = new Vector3()
   box.getSize(modelSize)
   box.getCenter(modelCenter)
-  modelCenter.y += modelSize.y / 5
+  modelCenter.y += modelSize.y / 8
 
   const verticalFovRadians = (cameraFov / 2 * Math.PI) / 180
   const horizontalFovRadians = Math.atan(Math.tan(verticalFovRadians) * Math.max(cameraAspect, 1e-3))

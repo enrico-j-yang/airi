@@ -37,6 +37,7 @@ export interface DisplayModelFile {
   name: string
   previewImage?: string
   importedAt: number
+  selectedModelPath?: string
 }
 
 export interface DisplayModelURL {
@@ -134,7 +135,7 @@ export const useDisplayModelsStore = defineStore('display-models', () => {
     })
   }
 
-  async function addMmdDisplayModel(file: File) {
+  async function addMmdDisplayModel(file: File, selectedModelPath?: string) {
     await until(displayModelsFromIndexedDBLoading).toBe(false)
     const analysis = await analyzeMmdModelArchive(file)
     const newDisplayModel: DisplayModelFile = {
@@ -144,6 +145,7 @@ export const useDisplayModelsStore = defineStore('display-models', () => {
       file,
       name: file.name,
       importedAt: Date.now(),
+      selectedModelPath,
     }
 
     newDisplayModel.previewImage = await generateMmdPreview(file)

@@ -81,10 +81,11 @@ export function buildMmdSceneBootstrap(root: Object3D, cameraFov: number, eyeHei
   }
 }
 
-export async function loadMmdSceneFromZip(file: Blob & { name?: string }) {
+export async function loadMmdSceneFromZip(file: Blob & { name?: string }, selectedModelPath?: string) {
   const analysis = await analyzeMmdArchive(file)
   const zip = await JSZip.loadAsync(await file.arrayBuffer())
-  const modelDirectory = dirname(analysis.primaryModelPath)
+  const modelPath = selectedModelPath || analysis.primaryModelPath
+  const modelDirectory = dirname(modelPath)
   const archiveResourceRoot = `mmd-archive://${encodeURIComponent(analysis.archiveName || 'archive')}/`
   const objectUrls = new Map<string, string>()
   const unresolvedTextures = new Set<string>()
@@ -130,13 +131,14 @@ export async function loadMmdSceneFromZip(file: Blob & { name?: string }) {
     objectUrls.set(path, URL.createObjectURL(new Blob([bytes])))
   }))
 
-  const modelEntry = zip.file(analysis.primaryModelPath)
+  const modelEntry = zip.file(modelPath)
   if (!modelEntry) {
-    throw new Error(`Primary MMD model not found: ${analysis.primaryModelPath}`)
+    throw new Error(`Selected MMD model not found: ${modelPath}`)
   }
 
   const modelObjectUrl = URL.createObjectURL(new Blob([await modelEntry.async('arraybuffer')]))
-  const modelUrl = withMmdModelExtension(modelObjectUrl, analysis.primaryModelFormat)
+  const modelFormat = modelPath.split('.').pop() as 'pmx' | 'pmd'
+  const modelUrl = withMmdModelExtension(modelObjectUrl, modelFormat)
   const loader = new MMDLoader(manager)
   loader.setResourcePath(`${archiveResourceRoot}${modelDirectory}`)
   const mesh = await loader.loadAsync(modelUrl)

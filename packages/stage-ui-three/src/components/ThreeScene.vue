@@ -50,6 +50,7 @@ import { MMDModel, VRMModel } from './Model'
 const props = withDefaults(defineProps<{
   currentAudioSource?: AudioBufferSourceNode
   modelSrc?: string
+  selectedModelPath?: string
   modelRenderer?: 'vrm' | 'mmd'
   skyBoxSrc?: string
   showAxes?: boolean
@@ -790,6 +791,7 @@ defineExpose({
         ref="modelRef"
         :last-committed-model-src="lastCommittedModelSrc"
         :model-src="props.modelSrc"
+        :selected-model-path="props.selectedModelPath"
         :paused="props.paused"
         :model-offset="modelOffset"
         :model-rotation-y="modelRotationY"

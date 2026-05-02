@@ -60,6 +60,7 @@ const {
   live2dDisableFocus,
   stageModelSelectedUrl,
   stageModelSelected,
+  stageModelSelectedDisplayModel,
   themeColorsHue,
   themeColorsHueDynamic,
   live2dIdleAnimationEnabled,
@@ -70,6 +71,14 @@ const {
   live2dMaxFps,
   live2dRenderScale,
 } = storeToRefs(settingsStore)
+
+const selectedModelPath = computed(() => {
+  const model = stageModelSelectedDisplayModel.value
+  if (model && 'selectedModelPath' in model) {
+    return model.selectedModelPath
+  }
+  return undefined
+})
 const { mouthOpenSize } = storeToRefs(useSpeakingStore())
 const { audioContext } = useAudioContext()
 const currentAudioSource = ref<AudioBufferSourceNode>()
@@ -597,6 +606,7 @@ defineExpose({
         v-model:state="componentState"
         min-w="50% <lg:full" min-h="100 sm:100" h-full w-full flex-1
         :model-src="stageModelSelectedUrl"
+        :selected-model-path="stageModelRenderer === 'mmd' ? selectedModelPath : undefined"
         :model-renderer="stageModelRenderer === 'mmd' ? 'mmd' : 'vrm'"
         :idle-animation="animations.idleLoop.toString()"
         :paused="paused"

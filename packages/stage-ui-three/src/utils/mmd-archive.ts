@@ -7,6 +7,7 @@ export interface MmdArchiveAnalysis {
   entryPaths: string[]
   primaryModelPath: string
   primaryModelFormat: MmdModelFormat
+  models: Array<{ path: string; format: MmdModelFormat }>
 }
 
 interface ModelEntry {
@@ -47,6 +48,7 @@ export async function analyzeMmdArchive(file: Blob & { name?: string }): Promise
     entryPaths,
     primaryModelPath: primaryModel.path,
     primaryModelFormat: primaryModel.format,
+    models: models.map(m => ({ path: m.path, format: m.format })),
   }
 }
 

@@ -2,10 +2,11 @@
 import type { DisplayModel } from '../../../../stores/display-models'
 
 import { Button } from '@proj-airi/ui'
+import type { MmdModelFormat } from '@proj-airi/stage-ui-three/utils/mmd-archive'
 import { useFileDialog } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger, EditableArea, EditableEditTrigger, EditableInput, EditablePreview, EditableRoot, EditableSubmitTrigger } from 'reka-ui'
-import { ref, watch } from 'vue'
+import { DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger, EditableArea, EditableEditTrigger, EditableInput, EditablePreview, EditableRoot, EditableSubmitTrigger } from 'reka-ui'
+import { computed, ref, watch } from 'vue'
 
 import { DisplayModelFormat, useDisplayModelsStore } from '../../../../stores/display-models'
 
@@ -69,7 +70,33 @@ function handleAddMmdModel(file: FileList | null) {
   if (!hasFileExtension(file[0], '.zip'))
     return
 
-  displayModelStore.addMmdDisplayModel(file[0])
+  handleAddMmdModelWithFile(file[0])
+}
+
+async function handleAddMmdModelWithFile(file: File) {
+  const { analyzeMmdArchive } = await import('@proj-airi/stage-ui-three/utils/mmd-archive')
+  const analysis = await analyzeMmdArchive(file)
+
+  if (analysis.models.length === 1) {
+    displayModelStore.addMmdDisplayModel(file)
+  }
+  else {
+    availableMmdModels.value = analysis.models
+    selectedMmdModelPath.value = undefined
+    pendingMmdFile.value = file
+    showMmdModelPicker.value = true
+  }
+}
+
+function confirmMmdModelSelection() {
+  if (!pendingMmdFile.value) {
+    showMmdModelPicker.value = false
+    return
+  }
+
+  displayModelStore.addMmdDisplayModel(pendingMmdFile.value, selectedMmdModelPath.value ?? undefined)
+  showMmdModelPicker.value = false
+  pendingMmdFile.value = null
 }
 
 const mapFormatRenderer: Record<DisplayModelFormat, string> = {
@@ -84,6 +111,18 @@ const mapFormatRenderer: Record<DisplayModelFormat, string> = {
 const live2dDialog = useFileDialog({ accept: '.zip', multiple: false, reset: true })
 const mmdDialog = useFileDialog({ accept: '.zip', multiple: false, reset: true })
 const vrmDialog = useFileDialog({ accept: '.vrm', multiple: false, reset: true })
+
+const showMmdModelPicker = ref(false)
+const availableMmdModels = ref<Array<{ path: string; format: MmdModelFormat }>>([])
+const selectedMmdModelPath = ref<string | undefined>(undefined)
+const pendingMmdFile = ref<File | null>(null)
+
+const mmdModelOptions = computed(() =>
+  availableMmdModels.value.map(m => ({
+    label: m.path.split('/').at(-1) ?? m.path,
+    value: m.path,
+  })),
+)
 
 live2dDialog.onChange(handleAddLive2DModel)
 mmdDialog.onChange(handleAddMmdModel)
@@ -157,6 +196,54 @@ vrmDialog.onChange(handleAddVRMModel)
         </DropdownMenuRoot>
       </div>
     </div>
+
+    <!-- MMD Model Picker Dialog -->
+    <DialogRoot v-model:open="showMmdModelPicker">
+      <DialogPortal>
+        <DialogOverlay class="fixed inset-0 z-[10001] bg-black/50 backdrop-blur-sm" />
+        <DialogContent class="fixed left-1/2 top-1/2 z-[10001] max-h-[85vh] w-[90vw] max-w-[450px] translate-x-[-50%] translate-y-[-50%] rounded-xl bg-white p-6 text-neutral-900 shadow-xl dark:bg-neutral-900 dark:text-neutral-100">
+          <DialogTitle class="m-0 text-lg font-bold">
+            选择模型文件
+          </DialogTitle>
+          <DialogDescription class="mb-5 mt-[10px] text-[15px] leading-normal">
+            该压缩包包含多个模型文件，请选择一个
+          </DialogDescription>
+
+          <fieldset class="mb-[15px] flex flex-col gap-2.5">
+            <div
+              v-for="option in mmdModelOptions"
+              :key="option.value"
+              :class="[
+                'flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 outline-none',
+                'hover:bg-neutral-100 dark:hover:bg-neutral-800',
+                selectedMmdModelPath === option.value ? 'bg-primary-100 dark:bg-primary-900/30' : '',
+              ]"
+              @click="selectedMmdModelPath = option.value"
+            >
+              <input
+                type="radio"
+                :checked="selectedMmdModelPath === option.value"
+                class="accent-primary-500"
+              >
+              <span>{{ option.label }}</span>
+            </div>
+          </fieldset>
+
+          <div class="mt-[25px] flex justify-end gap-2">
+            <Button variant="secondary" @click="showMmdModelPicker = false">
+              取消
+            </Button>
+            <Button
+              :disabled="!selectedMmdModelPath"
+              @click="confirmMmdModelSelection"
+            >
+              确认
+            </Button>
+          </div>
+        </DialogContent>
+      </DialogPortal>
+    </DialogRoot>
+
     <div v-if="displayModelsFromIndexedDBLoading">
       Loading display models...
     </div>

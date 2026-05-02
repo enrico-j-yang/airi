@@ -108,6 +108,7 @@ function createArchiveAnalysis(format: MmdModelFormat): MmdArchiveAnalysis {
     entryPaths: [`textures/diffuse.png`, `model.${format}`],
     primaryModelFormat: format,
     primaryModelPath: `model.${format}`,
+    models: [{ path: `model.${format}`, format }],
   }
 }
 

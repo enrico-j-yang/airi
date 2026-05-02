@@ -25,6 +25,7 @@ type ModelLoadReason = 'initial-load' | 'model-reload' | 'model-switch'
 const props = withDefaults(defineProps<{
   lastCommittedModelSrc?: string
   modelSrc?: string
+  selectedModelPath?: string
   paused?: boolean
   modelOffset: Vec3
   modelRotationY: number
@@ -48,6 +49,7 @@ const emit = defineEmits<{
 const {
   lastCommittedModelSrc,
   modelSrc,
+  selectedModelPath,
   modelOffset,
   modelRotationY,
   lookAtTarget,
@@ -261,7 +263,7 @@ async function loadModel() {
 
     const blob = await response.blob()
     const file = new File([blob], resolveArchiveFileName(modelSrc.value), { type: blob.type || 'application/zip' })
-    const loaded = await loadMmdSceneFromZip(file)
+    const loaded = await loadMmdSceneFromZip(file, selectedModelPath.value)
 
     if (!isLoadRequestCurrent(requestId)) {
       loaded.revokeAll()

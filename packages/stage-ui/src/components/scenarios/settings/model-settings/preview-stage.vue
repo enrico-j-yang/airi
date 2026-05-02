@@ -36,6 +36,7 @@ const {
   live2dDisableFocus,
   stageModelSelected,
   stageModelSelectedUrl,
+  stageModelSelectedDisplayModel,
   stageModelRenderer,
   themeColorsHue,
   themeColorsHueDynamic,
@@ -46,6 +47,14 @@ const {
   live2dMaxFps,
   live2dRenderScale,
 } = storeToRefs(settingsStore)
+
+const selectedModelPath = computed(() => {
+  const model = stageModelSelectedDisplayModel.value
+  if (model && 'selectedModelPath' in model) {
+    return model.selectedModelPath
+  }
+  return undefined
+})
 const { scale: live2dScale } = storeToRefs(live2dStore)
 const { sceneMutationLocked, scenePhase } = storeToRefs(modelStore)
 
@@ -152,6 +161,7 @@ defineExpose({
       <ThreeScene
         ref="vrmSceneRef"
         :model-src="stageModelSelectedUrl"
+        :selected-model-path="stageModelRenderer === 'mmd' ? selectedModelPath : undefined"
         :model-renderer="stageModelRenderer === 'mmd' ? 'mmd' : 'vrm'"
       />
     </div>

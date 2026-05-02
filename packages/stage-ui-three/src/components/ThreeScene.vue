@@ -122,6 +122,7 @@ const {
 
   lookAtTarget,
   trackingMode,
+  mmdTrackingMode,
   eyeHeight,
   envSelect,
   skyBoxSrc,
@@ -796,7 +797,7 @@ defineExpose({
         :model-offset="modelOffset"
         :model-rotation-y="modelRotationY"
         :look-at-target="lookAtTarget"
-        :tracking-mode="trackingMode"
+        :tracking-mode="mmdTrackingMode"
         :eye-height="eyeHeight"
         :camera-position="cameraPosition"
         :camera="camera"

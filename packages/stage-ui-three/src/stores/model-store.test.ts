@@ -13,6 +13,28 @@ describe('useModelStore MMD runtime metadata', () => {
     vi.stubGlobal('sessionStorage', storage)
   })
 
+  it('defaults the MMD-only tracking mode to none', () => {
+    setActivePinia(createPinia())
+    const store = useModelStore()
+
+    expect(store.mmdTrackingMode).toBe('none')
+  })
+
+  it('rehydrates MMD tracking mode independently from shared VRM tracking mode', async () => {
+    setActivePinia(createPinia())
+    const firstStore = useModelStore()
+
+    firstStore.trackingMode = 'mouse'
+    firstStore.mmdTrackingMode = 'head-track'
+    await nextTick()
+
+    setActivePinia(createPinia())
+    const secondStore = useModelStore()
+
+    expect(secondStore.trackingMode).toBe('mouse')
+    expect(secondStore.mmdTrackingMode).toBe('head-track')
+  })
+
   it('rehydrates runtime metadata across fresh store instances', async () => {
     setActivePinia(createPinia())
     const firstStore = useModelStore()
@@ -38,6 +60,19 @@ describe('useModelStore MMD runtime metadata', () => {
       rightEye: '右目',
     })
     expect(secondStore.mmdUnresolvedTextures).toEqual(['textures/missing.png'])
+  })
+
+  it('resets both shared and MMD tracking modes to none', () => {
+    setActivePinia(createPinia())
+    const store = useModelStore()
+
+    store.trackingMode = 'mouse'
+    store.mmdTrackingMode = 'head-track'
+
+    store.resetModelStore()
+
+    expect(store.trackingMode).toBe('none')
+    expect(store.mmdTrackingMode).toBe('none')
   })
 })
 

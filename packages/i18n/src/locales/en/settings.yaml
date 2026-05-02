@@ -1242,6 +1242,7 @@ mmd:
       options:
         camera: Look at camera
         mouse: Look at mouse
+        head-track: Head track
         disabled: Disabled
     smoothing: Look-at smoothing
     max-yaw: Max yaw

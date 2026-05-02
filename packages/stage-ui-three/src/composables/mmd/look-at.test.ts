@@ -6,6 +6,9 @@ import {
   dampMmdLookAtValue,
   resolveMmdLookAtAngles,
   resolveMmdLookAtBones,
+  resolveMmdScreenLookAtAngles,
+  resolveMmdTrackedBoneRotations,
+  resolveMmdTrackingTargetSource,
 } from './look-at'
 
 describe('resolveMmdLookAtBones', () => {
@@ -45,8 +48,108 @@ describe('mMD look-at math', () => {
     expect(clampMmdLookAtAngles({ yaw: 60, pitch: -40 }, { maxYawDeg: 30, maxPitchDeg: 20 })).toEqual({ yaw: 30, pitch: -20 })
   })
 
+  it('maps centered client coordinates to neutral head-track angles even when the canvas is offset', () => {
+    expect(resolveMmdScreenLookAtAngles({
+      clientX: 300,
+      clientY: 250,
+      viewportWidth: 400,
+      viewportHeight: 400,
+      viewportLeft: 100,
+      viewportTop: 50,
+      maxYawDeg: 30,
+      maxPitchDeg: 20,
+    })).toEqual({
+      yaw: 0,
+      pitch: 0,
+    })
+  })
+
+  it('maps screen edges to the configured head-track bounds', () => {
+    expect(resolveMmdScreenLookAtAngles({
+      clientX: 500,
+      clientY: 50,
+      viewportWidth: 400,
+      viewportHeight: 400,
+      viewportLeft: 100,
+      viewportTop: 50,
+      maxYawDeg: 30,
+      maxPitchDeg: 20,
+    })).toEqual({
+      yaw: 30,
+      pitch: -20,
+    })
+  })
+
   it('damps values toward the target', () => {
     expect(dampMmdLookAtValue(0, 20, 10, 0.016)).toBeGreaterThan(0)
     expect(dampMmdLookAtValue(0, 20, 10, 0.016)).toBeLessThan(20)
+  })
+
+  it('resolves head-track as head-only rotation', () => {
+    expect(resolveMmdTrackedBoneRotations('head-track', {
+      yaw: 20,
+      pitch: -10,
+    }, {
+      head: 0.35,
+      eye: 1,
+    })).toEqual({
+      head: { yaw: 7, pitch: -3.5 },
+      eye: { yaw: 0, pitch: 0 },
+    })
+  })
+
+  it('keeps mouse mode driving both head and eyes', () => {
+    expect(resolveMmdTrackedBoneRotations('mouse', {
+      yaw: 20,
+      pitch: -10,
+    }, {
+      head: 0.35,
+      eye: 1,
+    })).toEqual({
+      head: { yaw: 7, pitch: -3.5 },
+      eye: { yaw: 20, pitch: -10 },
+    })
+  })
+
+  it('keeps camera mode driving both head and eyes', () => {
+    expect(resolveMmdTrackedBoneRotations('camera', {
+      yaw: 20,
+      pitch: -10,
+    }, {
+      head: 0.35,
+      eye: 1,
+    })).toEqual({
+      head: { yaw: 7, pitch: -3.5 },
+      eye: { yaw: 20, pitch: -10 },
+    })
+  })
+
+  it('zeroes both head and eyes when mode is none', () => {
+    expect(resolveMmdTrackedBoneRotations('none', {
+      yaw: 20,
+      pitch: -10,
+    }, {
+      head: 0.35,
+      eye: 1,
+    })).toEqual({
+      head: { yaw: 0, pitch: 0 },
+      eye: { yaw: 0, pitch: 0 },
+    })
+  })
+
+  it('uses camera position as the tracking source in camera mode', () => {
+    expect(resolveMmdTrackingTargetSource('camera')).toBe('camera')
+  })
+
+  it('uses mouse coordinates as the tracking source in head-track mode', () => {
+    expect(resolveMmdTrackingTargetSource('head-track')).toBe('mouse')
+  })
+
+  it('falls back to the neutral forward target while paused', () => {
+    expect(resolveMmdTrackingTargetSource('head-track', { paused: true })).toBe('default')
+  })
+
+  it('uses the default forward target in none mode', () => {
+    expect(resolveMmdTrackingTargetSource('none')).toBe('default')
   })
 })

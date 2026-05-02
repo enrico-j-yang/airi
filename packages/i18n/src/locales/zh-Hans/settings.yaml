@@ -1187,6 +1187,7 @@ mmd:
       options:
         camera: 看向相机
         mouse: 看向鼠标
+        head-track: 头部跟随
         disabled: 关闭
     smoothing: 注视平滑度
     max-yaw: 左右最大转角

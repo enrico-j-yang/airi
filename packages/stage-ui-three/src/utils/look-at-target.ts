@@ -10,6 +10,8 @@ export interface ProjectClientPointToLookAtTargetParams {
   clientY: number
   viewportWidth: number
   viewportHeight: number
+  viewportLeft?: number
+  viewportTop?: number
   planeDistance?: number
 }
 
@@ -20,13 +22,18 @@ export function projectClientPointToLookAtTarget(params: ProjectClientPointToLoo
     clientY,
     viewportWidth,
     viewportHeight,
+    viewportLeft = 0,
+    viewportTop = 0,
     planeDistance = 1,
   } = params
 
+  const localX = clientX - viewportLeft
+  const localY = clientY - viewportTop
+
   const raycaster = new Raycaster()
   const pointer = new Vector2(
-    (clientX / viewportWidth) * 2 - 1,
-    -(clientY / viewportHeight) * 2 + 1,
+    (localX / viewportWidth) * 2 - 1,
+    -(localY / viewportHeight) * 2 + 1,
   )
   raycaster.setFromCamera(pointer, camera)
 

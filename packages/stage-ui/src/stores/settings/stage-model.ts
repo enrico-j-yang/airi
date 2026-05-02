@@ -23,6 +23,14 @@ export function resolveStageModelRenderer(format: DisplayModelFormat): StageMode
   }
 }
 
+export function isThreeStageModelRenderer(renderer: StageModelRenderer): renderer is 'vrm' | 'mmd' {
+  return renderer === 'vrm' || renderer === 'mmd'
+}
+
+export function supportsStageDepthViewControl(renderer: StageModelRenderer) {
+  return isThreeStageModelRenderer(renderer)
+}
+
 export const useSettingsStageModel = defineStore('settings-stage-model', () => {
   const displayModelsStore = useDisplayModelsStore()
   let stageModelUpdateSequence = 0

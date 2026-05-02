@@ -2,6 +2,7 @@ import { AmbientLight, DirectionalLight, PerspectiveCamera, Scene, Vector3, WebG
 
 import { buildMmdSceneBootstrap, loadMmdSceneFromZip } from './mmd-loader'
 import { markObjectMaterialsForUpdate, waitForObjectTextures } from './mmd-preview-textures'
+import { disposeObject3DResources } from './three-disposal'
 
 export const MMD_PREVIEW_WIDTH = 1440
 export const MMD_PREVIEW_HEIGHT = 1920
@@ -56,6 +57,7 @@ export async function loadMmdModelPreview(file: Blob & { name?: string }) {
     return canvas.toDataURL()
   }
   finally {
+    disposeObject3DResources(mesh)
     revokeAll()
     scene.clear()
     renderer.renderLists.dispose()

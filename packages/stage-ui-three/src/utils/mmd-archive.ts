@@ -7,7 +7,7 @@ export interface MmdArchiveAnalysis {
   entryPaths: string[]
   primaryModelPath: string
   primaryModelFormat: MmdModelFormat
-  models: Array<{ path: string; format: MmdModelFormat }>
+  models: Array<{ path: string, format: MmdModelFormat }>
 }
 
 interface ModelEntry {

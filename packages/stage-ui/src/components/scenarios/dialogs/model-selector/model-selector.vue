@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import type { MmdModelFormat } from '@proj-airi/stage-ui-three/utils/mmd-archive'
+
 import type { DisplayModel } from '../../../../stores/display-models'
 
 import { Button } from '@proj-airi/ui'
-import type { MmdModelFormat } from '@proj-airi/stage-ui-three/utils/mmd-archive'
 import { useFileDialog } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger, EditableArea, EditableEditTrigger, EditableInput, EditablePreview, EditableRoot, EditableSubmitTrigger } from 'reka-ui'
@@ -113,7 +114,7 @@ const mmdDialog = useFileDialog({ accept: '.zip', multiple: false, reset: true }
 const vrmDialog = useFileDialog({ accept: '.vrm', multiple: false, reset: true })
 
 const showMmdModelPicker = ref(false)
-const availableMmdModels = ref<Array<{ path: string; format: MmdModelFormat }>>([])
+const availableMmdModels = ref<Array<{ path: string, format: MmdModelFormat }>>([])
 const selectedMmdModelPath = ref<string | undefined>(undefined)
 const pendingMmdFile = ref<File | null>(null)
 
@@ -201,7 +202,7 @@ vrmDialog.onChange(handleAddVRMModel)
     <DialogRoot v-model:open="showMmdModelPicker">
       <DialogPortal>
         <DialogOverlay class="fixed inset-0 z-[10001] bg-black/50 backdrop-blur-sm" />
-        <DialogContent class="fixed left-1/2 top-1/2 z-[10001] max-h-[85vh] w-[90vw] max-w-[450px] translate-x-[-50%] translate-y-[-50%] rounded-xl bg-white p-6 text-neutral-900 shadow-xl dark:bg-neutral-900 dark:text-neutral-100">
+        <DialogContent class="fixed left-1/2 top-1/2 z-[10001] max-h-[85vh] max-w-[450px] w-[90vw] translate-x-[-50%] translate-y-[-50%] rounded-xl bg-white p-6 text-neutral-900 shadow-xl dark:bg-neutral-900 dark:text-neutral-100">
           <DialogTitle class="m-0 text-lg font-bold">
             选择模型文件
           </DialogTitle>

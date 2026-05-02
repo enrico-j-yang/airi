@@ -9,7 +9,7 @@ import { DisplayModelFormat, displayModelsPresets, resolveMmdDisplayModelFormat,
 const {
   loadMmdModelPreviewFromUrlMock,
 } = vi.hoisted(() => ({
-  loadMmdModelPreviewFromUrlMock: vi.fn<(url: string, fileName?: string) => Promise<string | undefined>>(),
+  loadMmdModelPreviewFromUrlMock: vi.fn<(url: string, fileName?: string, selectedModelPath?: string) => Promise<string | undefined>>(),
 }))
 
 vi.mock('@proj-airi/stage-ui-live2d/utils/live2d-zip-loader', () => ({}))

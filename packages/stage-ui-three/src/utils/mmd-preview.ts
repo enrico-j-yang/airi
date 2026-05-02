@@ -9,7 +9,7 @@ export const MMD_PREVIEW_HEIGHT = 1920
 export const MMD_PREVIEW_CAMERA_DISTANCE_SCALE = 1.08
 export const MMD_PREVIEW_LOOK_AT_Y_OFFSET_RATIO = -0.11
 
-export async function loadMmdModelPreview(file: Blob & { name?: string }) {
+export async function loadMmdModelPreview(file: Blob & { name?: string }, selectedModelPath?: string) {
   const canvas = document.createElement('canvas')
   canvas.width = MMD_PREVIEW_WIDTH
   canvas.height = MMD_PREVIEW_HEIGHT
@@ -25,7 +25,7 @@ export async function loadMmdModelPreview(file: Blob & { name?: string }) {
   directionalLight.position.set(1, 1, 1)
   scene.add(directionalLight)
 
-  const { mesh, revokeAll } = await loadMmdSceneFromZip(file)
+  const { mesh, revokeAll } = await loadMmdSceneFromZip(file, selectedModelPath)
   scene.add(mesh)
 
   try {
@@ -66,7 +66,7 @@ export async function loadMmdModelPreview(file: Blob & { name?: string }) {
   }
 }
 
-export async function loadMmdModelPreviewFromUrl(url: string, fileName?: string) {
+export async function loadMmdModelPreviewFromUrl(url: string, fileName?: string, selectedModelPath?: string) {
   const response = await fetch(url)
   if (!response.ok) {
     throw new Error(`Failed to fetch MMD archive preview source: ${response.status} ${response.statusText}`)
@@ -79,7 +79,7 @@ export async function loadMmdModelPreviewFromUrl(url: string, fileName?: string)
     { type: source.type || 'application/zip' },
   )
 
-  return loadMmdModelPreview(previewSource)
+  return loadMmdModelPreview(previewSource, selectedModelPath)
 }
 
 function resolveFileNameFromUrl(url: string) {

@@ -72,8 +72,8 @@ export const useDisplayModelsStore = defineStore('display-models', () => {
 
   let analyzeMmdModelArchive: (file: File) => Promise<{ primaryModelFormat: MmdModelFormat }>
   let generateLive2DPreview: (file: File) => Promise<string | undefined>
-  let generateMmdPreview: (file: File) => Promise<string | undefined>
-  let generateMmdPreviewFromUrl: (url: string, fileName?: string) => Promise<string | undefined>
+  let generateMmdPreview: (file: File, selectedModelPath?: string) => Promise<string | undefined>
+  let generateMmdPreviewFromUrl: (url: string, fileName?: string, selectedModelPath?: string) => Promise<string | undefined>
   let generateVrmPreview: (file: File) => Promise<string | undefined>
 
   const displayModelsFromIndexedDBLoading = ref(false)
@@ -148,7 +148,7 @@ export const useDisplayModelsStore = defineStore('display-models', () => {
       selectedModelPath,
     }
 
-    newDisplayModel.previewImage = await generateMmdPreview(file)
+    newDisplayModel.previewImage = await generateMmdPreview(file, selectedModelPath)
     displayModels.value.unshift(newDisplayModel)
 
     localforage.setItem<DisplayModelFile>(newDisplayModel.id, newDisplayModel)

@@ -3427,6 +3427,9 @@ importers:
       '@pixiv/three-vrm-core':
         specifier: ^3.5.1
         version: 3.5.1(@types/three@0.183.1)(three@0.183.2)
+      '@proj-airi/model-driver-mediapipe':
+        specifier: workspace:*
+        version: link:../model-driver-mediapipe
       '@proj-airi/stage-shared':
         specifier: workspace:*
         version: link:../stage-shared

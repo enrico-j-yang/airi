@@ -76,6 +76,80 @@ describe('useModelStore MMD runtime metadata', () => {
   })
 })
 
+describe('face tracking calibration in model store', () => {
+  beforeEach(() => {
+    const storage = createMemoryStorage()
+    vi.stubGlobal('localStorage', storage)
+    vi.stubGlobal('sessionStorage', storage)
+  })
+
+  it('initializes faceTrackingCalibration as null', () => {
+    setActivePinia(createPinia())
+    const store = useModelStore()
+    expect(store.faceTrackingCalibration).toBeNull()
+  })
+
+  it('initializes faceTrackingState with default values', () => {
+    setActivePinia(createPinia())
+    const store = useModelStore()
+    expect(store.faceTrackingState.detected).toBe(false)
+    expect(store.faceTrackingState.faceX).toBe(0.5)
+    expect(store.faceTrackingState.faceY).toBe(0.5)
+    expect(store.faceTrackingState.confidence).toBe(0)
+  })
+
+  it('setFaceTrackingCalibration updates calibration data', () => {
+    setActivePinia(createPinia())
+    const store = useModelStore()
+    const mockCalibration = {
+      points: [],
+      calibratedAt: '2026-05-02T00:00:00Z',
+    }
+    store.setFaceTrackingCalibration(mockCalibration)
+    expect(store.faceTrackingCalibration).toEqual(mockCalibration)
+  })
+
+  it('clearFaceTrackingCalibration sets calibration to null', () => {
+    setActivePinia(createPinia())
+    const store = useModelStore()
+    store.setFaceTrackingCalibration({ points: [], calibratedAt: '2026-05-02' })
+    store.clearFaceTrackingCalibration()
+    expect(store.faceTrackingCalibration).toBeNull()
+  })
+
+  it('updateFaceTrackingState updates detection state', () => {
+    setActivePinia(createPinia())
+    const store = useModelStore()
+    store.updateFaceTrackingState({
+      detected: true,
+      faceX: 0.3,
+      faceY: 0.7,
+      confidence: 0.95,
+    })
+    expect(store.faceTrackingState.detected).toBe(true)
+    expect(store.faceTrackingState.faceX).toBe(0.3)
+    expect(store.faceTrackingState.confidence).toBe(0.95)
+  })
+
+  it('persists faceTrackingCalibration across store instances', async () => {
+    setActivePinia(createPinia())
+    const firstStore = useModelStore()
+
+    firstStore.faceTrackingCalibration = {
+      points: [],
+      calibratedAt: '2026-05-02T00:00:00Z',
+    }
+    await nextTick()
+
+    setActivePinia(createPinia())
+    const secondStore = useModelStore()
+    expect(secondStore.faceTrackingCalibration).toEqual({
+      points: [],
+      calibratedAt: '2026-05-02T00:00:00Z',
+    })
+  })
+})
+
 function createMemoryStorage(): Storage {
   const values = new Map<string, string>()
 

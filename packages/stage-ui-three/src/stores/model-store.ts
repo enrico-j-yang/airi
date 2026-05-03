@@ -1,8 +1,9 @@
 import type { Vector3 } from 'three'
 
+import type { CalibrationPoint } from '../composables/mmd/calibration'
 import type { MmdTrackingMode } from '../composables/mmd/look-at'
 
-import { useBroadcastChannel, useLocalStorage } from '@vueuse/core'
+import { StorageSerializers, useBroadcastChannel, useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
@@ -28,6 +29,18 @@ export interface SceneBootstrap {
 }
 export type TrackingMode = 'camera' | 'mouse' | 'none'
 export type ScenePhase = 'pending' | 'loading' | 'binding' | 'mounted' | 'no-model' | 'error'
+
+export interface FaceTrackingCalibrationData {
+  points: CalibrationPoint[]
+  calibratedAt: string
+}
+
+export interface FaceTrackingState {
+  detected: boolean
+  faceX: number
+  faceY: number
+  confidence: number
+}
 export type HexColor = string & { __hex?: true }
 
 export interface FieldBase<T> {
@@ -186,6 +199,34 @@ export const useModelStore = defineStore('modelStore', () => {
   const mmdDetectedBones = useLocalStorage<MmdDetectedBones>('settings/stage-ui-three/mmd/detected-bones', createEmptyMmdDetectedBones())
   const mmdUnresolvedTextures = useLocalStorage<string[]>('settings/stage-ui-three/mmd/unresolved-textures', [])
 
+  const faceTrackingCalibration = useLocalStorage<FaceTrackingCalibrationData | null>(
+    'settings/stage-ui-three/face-tracking-calibration',
+    null,
+    { serializer: StorageSerializers.object },
+  )
+
+  const faceTrackingState = ref<FaceTrackingState>({
+    detected: false,
+    faceX: 0.5,
+    faceY: 0.5,
+    confidence: 0,
+  })
+
+  function setFaceTrackingCalibration(data: FaceTrackingCalibrationData) {
+    faceTrackingCalibration.value = data
+  }
+
+  function clearFaceTrackingCalibration() {
+    faceTrackingCalibration.value = null
+  }
+
+  function updateFaceTrackingState(state: Partial<FaceTrackingState>) {
+    faceTrackingState.value = {
+      ...faceTrackingState.value,
+      ...state,
+    }
+  }
+
   function resetMmdRuntimeState() {
     mmdPrimaryModelPath.value = ''
     mmdPrimaryModelFormat.value = undefined
@@ -278,6 +319,12 @@ export const useModelStore = defineStore('modelStore', () => {
     mmdPrimaryModelFormat,
     mmdDetectedBones,
     mmdUnresolvedTextures,
+
+    faceTrackingCalibration,
+    faceTrackingState,
+    setFaceTrackingCalibration,
+    clearFaceTrackingCalibration,
+    updateFaceTrackingState,
 
     directionalLightPosition,
     directionalLightTarget,

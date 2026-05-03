@@ -141,8 +141,8 @@ describe('mMD look-at math', () => {
     expect(resolveMmdTrackingTargetSource('camera')).toBe('camera')
   })
 
-  it('uses mouse coordinates as the tracking source in head-track mode', () => {
-    expect(resolveMmdTrackingTargetSource('head-track')).toBe('mouse')
+  it('uses face detection as the tracking source in head-track mode', () => {
+    expect(resolveMmdTrackingTargetSource('head-track')).toBe('face')
   })
 
   it('falls back to the neutral forward target while paused', () => {

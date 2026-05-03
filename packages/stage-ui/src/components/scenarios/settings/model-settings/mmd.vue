@@ -2,10 +2,14 @@
 import type { ModelSettingsRuntimeSnapshot } from './runtime'
 
 import { useModelStore } from '@proj-airi/stage-ui-three'
+import { Button } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import FaceTrackingPrompt from '../../../dialogs/FaceTrackingPrompt.vue'
+import DetectionIndicator from '../../../stage/DetectionIndicator.vue'
+import CalibrationWizard from './calibration/CalibrationWizard.vue'
 import ThreeScene from './three-scene.vue'
 
 import { Container, PropertyNumber } from '../../../data-pane'
@@ -35,6 +39,7 @@ const {
   mmdDetectedBones,
   mmdUnresolvedTextures,
   mmdTrackingMode,
+  faceTrackingCalibration,
 } = storeToRefs(modelStore)
 
 const controlsLocked = computed(() => props.runtimeSnapshot.controlsLocked)
@@ -52,12 +57,67 @@ const trackingOptions = computed<{
   { value: 'none', label: t('settings.mmd.look-at.mode.options.disabled'), class: 'col-start-5' },
 ])
 
+const showCalibrationWizard = ref(false)
+const showFirstTimePrompt = ref(false)
+const previousTrackingMode = ref<string>('none')
+
 function updateTrackingMode(value: string) {
-  mmdTrackingMode.value = value as typeof mmdTrackingMode.value
+  if (value === 'head-track' && !faceTrackingCalibration.value) {
+    previousTrackingMode.value = mmdTrackingMode.value
+    showFirstTimePrompt.value = true
+  }
+  else {
+    mmdTrackingMode.value = value as typeof mmdTrackingMode.value
+  }
 }
+
+function handlePromptStartCalibration() {
+  showFirstTimePrompt.value = false
+  showCalibrationWizard.value = true
+}
+
+function handlePromptCancel() {
+  showFirstTimePrompt.value = false
+  mmdTrackingMode.value = previousTrackingMode.value as typeof mmdTrackingMode.value
+}
+
+function handleWizardComplete() {
+  showCalibrationWizard.value = false
+  mmdTrackingMode.value = 'head-track'
+}
+
+function handleWizardCancel() {
+  showCalibrationWizard.value = false
+  if (!faceTrackingCalibration.value) {
+    mmdTrackingMode.value = previousTrackingMode.value as typeof mmdTrackingMode.value
+  }
+}
+
+function startRecalibration() {
+  showCalibrationWizard.value = true
+}
+
+const calibrationDateFormatted = computed(() => {
+  if (!faceTrackingCalibration.value?.calibratedAt)
+    return ''
+  const date = new Date(faceTrackingCalibration.value.calibratedAt)
+  return date.toLocaleDateString()
+})
 </script>
 
 <template>
+  <FaceTrackingPrompt
+    v-if="showFirstTimePrompt"
+    @start-calibration="handlePromptStartCalibration"
+    @cancel="handlePromptCancel"
+  />
+
+  <CalibrationWizard
+    v-if="showCalibrationWizard"
+    @complete="handleWizardComplete"
+    @cancel="handleWizardCancel"
+  />
+
   <ThreeScene
     :allow-extract-colors="allowExtractColors"
     :palette="palette"
@@ -68,6 +128,44 @@ function updateTrackingMode(value: string) {
     @extract-colors-from-model="$emit('extractColorsFromModel')"
     @update:tracking-mode="updateTrackingMode"
   />
+
+  <Container
+    v-if="mmdTrackingMode === 'head-track'"
+    :title="t('settings.mmd.face-tracking.calibration.title')"
+    icon="i-solar:face-scan-circle-bold-duotone"
+    :class="[
+      'rounded-xl',
+      'bg-white/80 dark:bg-black/75',
+      'backdrop-blur-lg',
+      'mt-2',
+    ]"
+  >
+    <div class="px-2 pb-2">
+      <div class="flex items-center justify-between gap-4 py-2">
+        <div>
+          <p class="text-sm text-neutral-600 dark:text-neutral-400">
+            {{ faceTrackingCalibration
+              ? t('settings.mmd.face-tracking.calibration.status-calibrated', { date: calibrationDateFormatted })
+              : t('settings.mmd.face-tracking.calibration.status-not-calibrated')
+            }}
+          </p>
+        </div>
+        <Button
+          variant="primary"
+          size="sm"
+          @click="startRecalibration"
+        >
+          {{ faceTrackingCalibration
+            ? t('settings.mmd.face-tracking.calibration.button-recalibrate')
+            : t('settings.mmd.face-tracking.calibration.button-start')
+          }}
+        </Button>
+      </div>
+    </div>
+  </Container>
+
+  <DetectionIndicator v-if="mmdTrackingMode === 'head-track'" />
+
   <Container
     :title="t('settings.mmd.title')"
     icon="i-solar:people-nearby-bold-duotone"

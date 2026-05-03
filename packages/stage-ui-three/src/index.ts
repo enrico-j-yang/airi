@@ -1,5 +1,7 @@
 export { default as ThreeScene } from './components/ThreeScene.vue'
 export * from './composables/hit-test'
+export * from './composables/mmd/calibration'
+export * from './composables/mmd/face-tracking'
 export * from './composables/render-target'
 export { useModelStore } from './stores/model-store'
 export * from './trace'

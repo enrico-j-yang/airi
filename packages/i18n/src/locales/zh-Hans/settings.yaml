@@ -1194,6 +1194,58 @@ mmd:
     max-pitch: 上下最大转角
     head-influence: 头部参与比例
     eye-influence: 眼部参与比例
+  face-tracking:
+    calibration:
+      title: 人脸追踪校准
+      status-calibrated: '已校准于 {date}'
+      status-not-calibrated: '未校准'
+      button-start: 开始校准
+      button-recalibrate: 重新校准
+    wizard:
+      welcome:
+        title: 人脸追踪校准
+        description: 校准将你的人脸位置映射到模型的头部移动。你需要捕获9个位置来创建准确的追踪。
+        requirements:
+          camera: 摄像头已连接且可用
+          face: 人脸在摄像头画面中可见
+          time: 大约需要1分钟完成
+        start: 开始校准
+      capture:
+        point-label: '第 {current} 点，共9点'
+        positions:
+          top-left: 屏幕左上角
+          top-right: 屏幕右上角
+          top-center: 屏幕上方中央
+          left-center: 屏幕左边中央
+          right-center: 屏幕右边中央
+          bottom-left: 屏幕左下角
+          bottom-right: 屏幕右下角
+          bottom-center: 屏幕下方中央
+          center: 屏幕正中央
+        instruction: '将你的脸部移动到屏幕的{position}，并看向该位置。'
+        capture: 捕获位置
+        back: 返回上一步
+        camera-preview: 摄像头预览
+        detected: 已检测到人脸
+        not-detected: 未检测到人脸
+      complete:
+        title: 校准完成！
+        description: 人脸追踪已完成校准。模型将准确跟随你的脸部位置。
+        tip: '如果之后追踪感觉不准确（例如，移动摄像头或显示器后），可以在 设置 → 模型 → MMD 设置 中重新校准。'
+        done: 完成
+    prompt:
+      title: 人脸追踪设置
+      description: 此模型需要人脸追踪校准才能实现准确的头部移动。现在开始校准吗？
+      info: 校准大约需要1分钟，并且需要摄像头。
+      later-info: 你也可以稍后在 设置 → 模型 → MMD 设置 中进行校准。
+      start: 开始校准
+      cancel: 取消
+    indicator:
+      detected: 正在追踪
+      searching: 搜索中
+      lost: 已丢失
+      no-camera: 无摄像头
+      confidence: '置信度: {percent}%'
 websocket-secure-enabled:
   title: 启用安全WebSocket (WSS)
   description: >-

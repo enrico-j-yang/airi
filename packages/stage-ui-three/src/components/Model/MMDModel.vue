@@ -11,13 +11,14 @@ import { storeToRefs } from 'pinia'
 import { Box3, MathUtils, Vector3 } from 'three'
 import { computed, onMounted, onUnmounted, ref, shallowRef, toRefs, watch } from 'vue'
 
+import { interpolateCalibrationAngles } from '../../composables/mmd/calibration'
+import { useFaceTracking } from '../../composables/mmd/face-tracking'
 import {
   clampMmdLookAtAngles,
   dampMmdLookAtValue,
 
   resolveMmdLookAtAngles,
   resolveMmdLookAtBones,
-  resolveMmdScreenLookAtAngles,
   resolveMmdTrackedBoneRotations,
   resolveMmdTrackingTargetSource,
 } from '../../composables/mmd/look-at'
@@ -81,10 +82,13 @@ const {
   mmdPrimaryModelPath,
   mmdDetectedBones,
   mmdUnresolvedTextures,
+  faceTrackingCalibration,
+  faceTrackingState,
 } = storeToRefs(modelStore)
 
 const { onBeforeRender } = useLoop()
 const { x: mouseX, y: mouseY } = useMouse({ type: 'client' })
+const { startTracking, stopTracking } = useFaceTracking()
 
 const mmdRoot = shallowRef<Object3D>()
 const disposeResources = shallowRef<(() => void) | undefined>()
@@ -355,22 +359,6 @@ function resolveTrackingTargetFromMouse(clientX: number, clientY: number) {
   })
 }
 
-function resolveHeadTrackAnglesFromMouse(clientX: number, clientY: number) {
-  const canvas = renderer?.instance.domElement
-  const rect = canvas?.getBoundingClientRect()
-
-  return resolveMmdScreenLookAtAngles({
-    clientX,
-    clientY,
-    maxPitchDeg: mmdLookAtMaxPitch.value,
-    maxYawDeg: mmdLookAtMaxYaw.value,
-    viewportHeight: rect?.height ?? window.innerHeight,
-    viewportLeft: rect?.left ?? 0,
-    viewportTop: rect?.top ?? 0,
-    viewportWidth: rect?.width ?? window.innerWidth,
-  })
-}
-
 function syncTrackingMode() {
   clearLookAtTrackingWatches()
 
@@ -379,6 +367,13 @@ function syncTrackingMode() {
   }
 
   const source = resolveMmdTrackingTargetSource(trackingMode.value as MmdTrackingMode, { paused: paused.value })
+
+  if (source === 'face') {
+    startTracking()
+    return
+  }
+
+  stopTracking()
 
   if (source === 'camera') {
     stopCameraWatch = watch(cameraPosition, newPosition => emit('lookAtTarget', { ...newPosition }), {
@@ -395,6 +390,7 @@ function syncTrackingMode() {
     return
   }
 
+  stopTracking()
   emit('lookAtTarget', defaultLookAtTarget(eyeHeight.value))
 }
 
@@ -407,7 +403,23 @@ onBeforeRender(({ delta }) => {
   ;(resolvedBones.value.head ?? mmdRoot.value).getWorldPosition(lookAtOrigin)
 
   const clampedAngles = trackingMode.value === 'head-track'
-    ? resolveHeadTrackAnglesFromMouse(mouseX.value, mouseY.value)
+    ? (() => {
+        const faceX = faceTrackingState.value.faceX
+        const faceY = faceTrackingState.value.faceY
+
+        const angles = interpolateCalibrationAngles(
+          faceX,
+          faceY,
+          faceTrackingCalibration.value?.points ?? null,
+          mmdLookAtMaxYaw.value,
+          mmdLookAtMaxPitch.value,
+        )
+
+        return clampMmdLookAtAngles(angles, {
+          maxPitchDeg: mmdLookAtMaxPitch.value,
+          maxYawDeg: mmdLookAtMaxYaw.value,
+        })
+      })()
     : (() => {
         const target = new Vector3(lookAtTarget.value.x, lookAtTarget.value.y, lookAtTarget.value.z)
         const direction = target.sub(lookAtOrigin)
@@ -475,6 +487,7 @@ onMounted(() => {
 onUnmounted(() => {
   invalidatePendingLoads()
   clearLookAtTrackingWatches()
+  stopTracking()
   cleanupLoadedModel()
 })
 

@@ -1249,6 +1249,58 @@ mmd:
     max-pitch: Max pitch
     head-influence: Head influence
     eye-influence: Eye influence
+  face-tracking:
+    calibration:
+      title: Face Tracking Calibration
+      status-calibrated: 'Calibrated on {date}'
+      status-not-calibrated: 'Not calibrated'
+      button-start: Start Calibration
+      button-recalibrate: Recalibrate
+    wizard:
+      welcome:
+        title: Face Tracking Calibration
+        description: Calibration maps your face position to model head movement. You will capture 9 positions to create accurate tracking.
+        requirements:
+          camera: Camera connected and accessible
+          face: Face visible in camera frame
+          time: Approximately 1 minute to complete
+        start: Start Calibration
+      capture:
+        point-label: 'Point {current} of 9'
+        positions:
+          top-left: top-left corner
+          top-right: top-right corner
+          top-center: top center
+          left-center: left center
+          right-center: right center
+          bottom-left: bottom-left corner
+          bottom-right: bottom-right corner
+          bottom-center: bottom center
+          center: center
+        instruction: 'Move your face to the {position} of your screen and look at that position.'
+        capture: Capture Position
+        back: Back
+        camera-preview: Camera Preview
+        detected: Face detected
+        not-detected: No face detected
+      complete:
+        title: Calibration Complete!
+        description: Your face tracking is now calibrated. The model will accurately follow your face position.
+        tip: 'If tracking feels inaccurate later (e.g., after moving your camera or display), you can recalibrate from Settings → Models → MMD Settings.'
+        done: Done
+    prompt:
+      title: Face Tracking Setup
+      description: This model needs face tracking calibration for accurate head movement. Would you like to calibrate now?
+      info: Calibration takes about 1 minute and requires your camera.
+      later-info: You can also calibrate later from Settings → Models → MMD Settings.
+      start: Start Calibration
+      cancel: Cancel
+    indicator:
+      detected: Tracking
+      searching: Searching
+      lost: Lost
+      no-camera: No Camera
+      confidence: 'Confidence: {percent}%'
 websocket-secure-enabled:
   title: Enable Secure WebSocket (WSS)
   description: >-

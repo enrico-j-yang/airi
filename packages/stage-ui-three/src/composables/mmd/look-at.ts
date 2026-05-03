@@ -6,7 +6,7 @@ const rightEyeCandidates = ['右目', '右目先', 'eye_r', 'rightEye', 'RightEy
 const EPSILON = 1e-8
 
 export type MmdTrackingMode = 'camera' | 'mouse' | 'head-track' | 'none'
-export type MmdTrackingTargetSource = 'camera' | 'mouse' | 'default'
+export type MmdTrackingTargetSource = 'camera' | 'mouse' | 'face' | 'default'
 
 interface MmdTrackedRotation {
   yaw: number
@@ -156,8 +156,8 @@ export function resolveMmdTrackingTargetSource(mode: MmdTrackingMode, options: {
     return 'camera'
   }
 
-  if (mode === 'mouse' || mode === 'head-track') {
-    return 'mouse'
+  if (mode === 'head-track') {
+    return 'face'
   }
 
   return 'default'

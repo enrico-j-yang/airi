@@ -32,6 +32,7 @@
     "@pixiv/three-vrm": "^3.5.1",
     "@pixiv/three-vrm-animation": "^3.5.1",
     "@pixiv/three-vrm-core": "^3.5.1",
+    "@proj-airi/model-driver-mediapipe": "workspace:*",
     "@proj-airi/stage-shared": "workspace:*",
     "@proj-airi/ui": "workspace:*",
     "@tresjs/cientos": "^5.6.0",

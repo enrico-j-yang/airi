@@ -117,6 +117,8 @@ outputs/
 
 # MediaPipe task assets
 packages/model-driver-mediapipe/tasks/assets/*
+apps/stage-pocket/public/mediapipe-wasm/
+apps/stage-tamagotchi/src/renderer/public/mediapipe-wasm/
 
 # Plugins
 plugins/local

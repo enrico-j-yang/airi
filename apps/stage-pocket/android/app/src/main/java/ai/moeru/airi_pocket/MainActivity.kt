@@ -30,12 +30,24 @@ class MainActivity : BridgeActivity() {
 
         val bridge = bridge ?: return
         installWebSocketBridge(bridge)
+        setupWebViewSettings(bridge)
 
         if (!bridge.isDevMode) {
             return
         }
 
         bridge.setWebViewClient(DebugTlsBypassWebViewClient(bridge))
+    }
+
+    private fun setupWebViewSettings(bridge: Bridge) {
+        // NOTICE: Android WebView requires a user gesture for media playback by default.
+        // Face tracking creates a hidden video element and calls play() after async init,
+        // which runs outside the original user gesture context.
+        with(bridge.webView.settings) {
+            mediaPlaybackRequiresUserGesture = false
+            javaScriptEnabled = true
+            domStorageEnabled = true
+        }
     }
 
     override fun onDestroy() {

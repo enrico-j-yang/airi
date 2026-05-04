@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { CalibrationPosition, FaceTrackingCalibrationData } from '@proj-airi/stage-ui-three'
 
-import { CALIBRATION_POSITIONS, createCalibrationPointFromCapture, useModelStore } from '@proj-airi/stage-ui-three'
+import { CALIBRATION_POSITIONS, createCalibrationPointFromCapture, useFaceTrackingCameraPreview, useModelStore } from '@proj-airi/stage-ui-three'
 import { Button } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits<{
@@ -23,6 +23,9 @@ const {
 
 const currentStep = ref(0)
 const capturedPoints = ref<ReturnType<typeof createCalibrationPointFromCapture>[]>([])
+const cameraPreviewHost = useTemplateRef<HTMLElement>('cameraPreviewHost')
+
+useFaceTrackingCameraPreview(cameraPreviewHost)
 
 const currentPosition = computed<CalibrationPosition>(() => {
   if (currentStep.value < 1 || currentStep.value > 9) {
@@ -163,18 +166,30 @@ function closeWizard() {
               <div class="mb-1 text-xs text-neutral-500">
                 {{ t('settings.mmd.face-tracking.wizard.capture.camera-preview') }}
               </div>
-              <div :class="['h-24 rounded flex items-center justify-center', 'bg-black']">
-                <template v-if="faceState.detected">
-                  <div class="h-8 w-8 border-2 border-green-500 rounded-full" />
-                  <span class="ml-2 text-xs text-green-500">
-                    {{ t('settings.mmd.face-tracking.wizard.capture.detected') }}
-                  </span>
-                </template>
-                <template v-else>
-                  <span class="text-xs text-neutral-500">
-                    {{ t('settings.mmd.face-tracking.wizard.capture.not-detected') }}
-                  </span>
-                </template>
+              <div
+                ref="cameraPreviewHost"
+                :class="[
+                  'relative h-24 overflow-hidden rounded',
+                  'flex items-center justify-center',
+                  'bg-black',
+                ]"
+              >
+                <div
+                  :class="[
+                    'absolute bottom-2 left-2 right-2',
+                    'flex items-center justify-center rounded-full px-2 py-1',
+                    'bg-black/60 text-xs backdrop-blur-sm',
+                    faceState.detected ? 'text-green-400' : 'text-neutral-300',
+                  ]"
+                >
+                  <template v-if="faceState.detected">
+                    <div class="mr-2 h-3 w-3 border border-green-400 rounded-full" />
+                    <span>{{ t('settings.mmd.face-tracking.wizard.capture.detected') }}</span>
+                  </template>
+                  <template v-else>
+                    <span>{{ t('settings.mmd.face-tracking.wizard.capture.not-detected') }}</span>
+                  </template>
+                </div>
               </div>
             </div>
 

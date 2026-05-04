@@ -1,3 +1,4 @@
+import { cp, mkdir } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
 import VueI18n from '@intlify/unplugin-vue-i18n/vite'
@@ -244,6 +245,19 @@ export default defineConfig({
       Download('https://dist.ayaka.moe/live2d-models/hiyori_pro_zh.zip', 'hiyori_pro_zh.zip', 'live2d/models', { parentDir: stageUIAssetsRoot, cacheDir: sharedCacheDir }),
       Download('https://dist.ayaka.moe/vrm-models/VRoid-Hub/AvatarSample-A/AvatarSample_A.vrm', 'AvatarSample_A.vrm', 'vrm/models/AvatarSample-A', { parentDir: stageUIAssetsRoot, cacheDir: sharedCacheDir }),
       Download('https://dist.ayaka.moe/vrm-models/VRoid-Hub/AvatarSample-B/AvatarSample_B.vrm', 'AvatarSample_B.vrm', 'vrm/models/AvatarSample-B', { parentDir: stageUIAssetsRoot, cacheDir: sharedCacheDir }),
+
+      // NOTICE: MediaPipe FilesetResolver.forVisionTasks() dynamically creates
+      // <script> tags to load WASM files with hard-coded filenames. Copy them to
+      // public/ so filenames are preserved (Vite would otherwise hash them).
+      {
+        name: 'proj-airi:mediapipe-wasm',
+        async buildStart() {
+          const srcDir = resolve(join(import.meta.dirname, '..', '..', 'packages', 'model-driver-mediapipe', 'tasks', 'assets', 'wasm'))
+          const destDir = resolve(join(import.meta.dirname, 'src', 'renderer', 'public', 'mediapipe-wasm'))
+          await mkdir(destDir, { recursive: true })
+          await cp(srcDir, destDir, { recursive: true })
+        },
+      },
     ],
   },
 })

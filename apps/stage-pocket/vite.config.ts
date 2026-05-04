@@ -5,6 +5,7 @@ import type { PluginOption } from 'vite'
 import process from 'node:process'
 
 import { execSync } from 'node:child_process'
+import { cp, mkdir } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
 import VueI18n from '@intlify/unplugin-vue-i18n/vite'
@@ -188,6 +189,20 @@ export default defineConfig({
           },
         } as PluginOption]
       : [],
+
+    // NOTICE: MediaPipe FilesetResolver.forVisionTasks() dynamically creates
+    // <script> tags to load WASM files with hard-coded filenames. Vite's asset
+    // processing renames files with hashes, so we copy them to public/ where
+    // filenames are preserved. tasks.ts uses '/mediapipe-wasm' in PROD mode.
+    {
+      name: 'proj-airi:mediapipe-wasm',
+      async buildStart() {
+        const srcDir = resolve(join(import.meta.dirname, '..', '..', 'packages', 'model-driver-mediapipe', 'tasks', 'assets', 'wasm'))
+        const destDir = resolve(join(import.meta.dirname, 'public', 'mediapipe-wasm'))
+        await mkdir(destDir, { recursive: true })
+        await cp(srcDir, destDir, { recursive: true })
+      },
+    },
 
     {
       name: 'proj-airi:defines',

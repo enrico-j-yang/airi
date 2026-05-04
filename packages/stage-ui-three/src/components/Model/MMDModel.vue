@@ -369,7 +369,7 @@ function syncTrackingMode() {
   const source = resolveMmdTrackingTargetSource(trackingMode.value as MmdTrackingMode, { paused: paused.value })
 
   if (source === 'face') {
-    startTracking()
+    void startTracking()
     return
   }
 

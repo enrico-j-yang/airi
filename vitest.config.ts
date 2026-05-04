@@ -8,6 +8,7 @@ export default defineConfig({
       'apps/stage-tamagotchi',
       'packages/audio-pipelines-transcribe',
       'packages/cap-vite',
+      'packages/model-driver-mediapipe',
       'packages/vishot-runner-browser',
       'packages/plugin-sdk',
       'packages/server-runtime',

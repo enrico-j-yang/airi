@@ -43,6 +43,7 @@ import {
   stageThreeTraceThreeSceneSubtreeEvent,
   stageThreeTraceThreeSceneTransactionEvent,
 } from '../trace'
+import { canMountThreeScenePostProcessing } from '../utils/three-scene-post-processing'
 import { OrbitControls } from './Controls'
 import { SkyBox } from './Environment'
 import { MMDModel, VRMModel } from './Model'
@@ -545,6 +546,16 @@ const effectProps = {
   blendFunction: BlendFunction.SRC,
 }
 
+// NOTICE: `@tresjs/post-processing` 3.6.0 initializes `EffectComposer` from an immediate watcher
+// and only bails when renderer, scene, and camera are all missing. Verified in
+// `node_modules/.pnpm/@tresjs+post-processing@3.6_97be382e1398b9ada3e0c4e97729a968/node_modules/@tresjs/post-processing/dist/tres-post-processing.js:106`
+// and `:108`. Gate the subtree until `TresCanvas` has a live renderer + scene.
+const postProcessingReady = computed(() => canMountThreeScenePostProcessing({
+  canvasReady: canvasReady.value,
+  rendererInstance: tresCanvasRef.value?.renderer.instance,
+  scene: tresCanvasRef.value?.scene.value,
+}))
+
 function applyVrmFrameRuntimeHook() {
   modelRef.value?.setVrmFrameHook?.(vrmFrameRuntimeHook.value)
 }
@@ -757,7 +768,7 @@ defineExpose({
         :intensity="directionalLightIntensity"
         cast-shadow
       />
-      <Suspense>
+      <Suspense v-if="postProcessingReady">
         <EffectComposerPmndrs :multisampling="multisampling">
           <HueSaturationPmndrs v-bind="effectProps" />
         </EffectComposerPmndrs>
